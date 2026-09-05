@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AppTheme, UserStats } from '../types';
 import { FiveStageLesson, AVAILABLE_FIVE_STAGE_LESSONS } from '../data/lessonStagesData';
 import { soundFX } from '../utils/audio';
@@ -101,6 +101,14 @@ const renderSnippetLine = (line: string, isDark: boolean) => {
   return <div className={`${indentClass} ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>{line}</div>;
 };
 
+const STAGE_TITLES: Record<number, string> = {
+  1: 'Learn',
+  2: 'Explore',
+  3: 'Predict',
+  4: 'Write & Run',
+  5: 'Mastered',
+};
+
 export const FiveStageLessonRunner: React.FC<FiveStageLessonRunnerProps> = ({
   theme,
   initialLessonKey = 'functions',
@@ -113,10 +121,9 @@ export const FiveStageLessonRunner: React.FC<FiveStageLessonRunnerProps> = ({
   const [currentStage, setCurrentStage] = useState<number>(1); // 1: Learn, 2: Explore, 3: Predict, 4: WriteRun, 5: Mastered
   const [exploreCardIndex, setExploreCardIndex] = useState<number>(0);
 
-  // Predict state
-  const [predictQuestionIndex, setPredictQuestionIndex] = useState<number>(0);
-  const [selectedPredictOption, setSelectedPredictOption] = useState<string | null>('B');
-  const [hasCheckedPredict, setHasCheckedPredict] = useState<boolean>(true);
+  // Predict state: support all questions, no default selected answer
+  const [predictAnswers, setPredictAnswers] = useState<Record<number, string>>({});
+  const [activePredictCardIdx, setActivePredictCardIdx] = useState<number>(0);
 
   // Write & Run state
   const lessonData: FiveStageLesson =
@@ -124,17 +131,73 @@ export const FiveStageLessonRunner: React.FC<FiveStageLessonRunnerProps> = ({
     AVAILABLE_FIVE_STAGE_LESSONS.functions ||
     AVAILABLE_FIVE_STAGE_LESSONS.variables;
   const [userCode, setUserCode] = useState<string>(lessonData.writeRun.initialCode);
-  const [hasRunCode, setHasRunCode] = useState<boolean>(true);
+  const [hasRunCode, setHasRunCode] = useState<boolean>(false);
   const [actualOutput, setActualOutput] = useState<string>(lessonData.writeRun.expectedOutput);
-  const [testPassed, setTestPassed] = useState<boolean>(true);
 
   // Badge interactive tap animation state
   const [badgePressed, setBadgePressed] = useState<boolean>(false);
 
+  // Sync browser/device back button with screen back button
+  useEffect(() => {
+    window.history.replaceState({ codedoStage: 1 }, '');
+
+    const handlePopState = (e: PopStateEvent) => {
+      if (e.state && typeof e.state.codedoStage === 'number') {
+        setCurrentStage(e.state.codedoStage);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      } else {
+        onExit();
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, [onExit]);
+
+  // Sync scroll position with Step 2 (Explore) example chips
+  useEffect(() => {
+    if (currentStage !== 2) return;
+    const handleScroll = () => {
+      const cards = lessonData.explore.cards;
+      const scrollPos = window.scrollY + 140;
+      for (let i = cards.length - 1; i >= 0; i--) {
+        const el = document.getElementById(`explore-card-${i}`);
+        if (el && el.offsetTop <= scrollPos) {
+          setExploreCardIndex(i);
+          break;
+        }
+      }
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [currentStage, lessonData.explore.cards]);
+
+  // Sync scroll position with Step 3 (Predict) question chips
+  useEffect(() => {
+    if (currentStage !== 3) return;
+    const handleScroll = () => {
+      const questions = lessonData.predict.questions;
+      const scrollPos = window.scrollY + 140;
+      for (let i = questions.length - 1; i >= 0; i--) {
+        const el = document.getElementById(`predict-q-${i}`);
+        if (el && el.offsetTop <= scrollPos) {
+          setActivePredictCardIdx(i);
+          break;
+        }
+      }
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [currentStage, lessonData.predict.questions]);
+
   const handleNextStage = () => {
     soundFX.playClick();
     if (currentStage < 5) {
-      setCurrentStage((prev) => prev + 1);
+      const nextStage = currentStage + 1;
+      window.history.pushState({ codedoStage: nextStage }, '');
+      setCurrentStage(nextStage);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } else {
       soundFX.playSuccess();
@@ -145,18 +208,23 @@ export const FiveStageLessonRunner: React.FC<FiveStageLessonRunnerProps> = ({
   const handlePreviousStage = () => {
     soundFX.playClick();
     if (currentStage > 1) {
-      setCurrentStage((prev) => prev - 1);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      window.history.back();
     } else {
       onExit();
     }
+  };
+
+  const handleJumpToStage = (step: number) => {
+    soundFX.playClick();
+    window.history.pushState({ codedoStage: step }, '');
+    setCurrentStage(step);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleRunCode = () => {
     soundFX.playClick();
     setHasRunCode(true);
     setActualOutput(lessonData.writeRun.expectedOutput);
-    setTestPassed(true);
     soundFX.playSuccess();
   };
 
@@ -166,26 +234,13 @@ export const FiveStageLessonRunner: React.FC<FiveStageLessonRunnerProps> = ({
     setTimeout(() => setBadgePressed(false), 240);
   };
 
-  const currentPredictQ =
-    lessonData.predict.questions[predictQuestionIndex] || lessonData.predict.questions[0];
-
-  const handleSelectPredictOption = (optId: string) => {
+  const handleSelectPredictOption = (qIdx: number, optId: string) => {
     soundFX.playClick();
-    setSelectedPredictOption(optId);
-    setHasCheckedPredict(true);
-  };
-
-  const handleNextPredictQuestion = () => {
-    soundFX.playClick();
-    if (predictQuestionIndex < lessonData.predict.questions.length - 1) {
-      const nextIdx = predictQuestionIndex + 1;
-      setPredictQuestionIndex(nextIdx);
-      const nextQ = lessonData.predict.questions[nextIdx];
-      const defaultCorrect = nextQ?.options.find((o) => o.isCorrect)?.id || 'B';
-      setSelectedPredictOption(defaultCorrect);
-      setHasCheckedPredict(true);
-    } else {
-      handleNextStage();
+    setPredictAnswers((prev) => ({ ...prev, [qIdx]: optId }));
+    const question = lessonData.predict.questions[qIdx];
+    const opt = question?.options.find((o) => o.id === optId);
+    if (opt?.isCorrect) {
+      soundFX.playSuccess();
     }
   };
 
@@ -193,13 +248,19 @@ export const FiveStageLessonRunner: React.FC<FiveStageLessonRunnerProps> = ({
 
   return (
     <div
-      className={`min-h-screen w-full flex flex-col items-center select-none pb-10 transition-colors duration-300 ${
+      className={`min-h-screen w-full flex flex-col items-center select-none pb-12 transition-colors duration-300 ${
         isDark ? 'bg-[#0f131d] text-[#dfe2f1]' : 'bg-[#f1f4f9] text-slate-800'
       }`}
     >
-      <div className="w-full max-w-md px-4 pt-3 flex flex-col">
-        {/* ================= 1. UNIVERSAL TOP NAVIGATION HEADER ================= */}
-        <header className="flex items-center justify-between gap-2 py-2 mb-3">
+      {/* ================= STICKY ELEVATED TOOLBAR (NATIVE ANDROID STYLE) ================= */}
+      <header
+        className={`sticky top-0 z-50 w-full transition-all duration-200 border-b ${
+          isDark
+            ? 'bg-[#0f131d]/95 backdrop-blur-md border-[#262c3d] shadow-[0_4px_16px_rgba(0,0,0,0.6)]'
+            : 'bg-white/95 backdrop-blur-md border-slate-200/90 shadow-[0_2px_8px_rgba(0,0,0,0.06),0_1px_3px_rgba(0,0,0,0.04)]'
+        }`}
+      >
+        <div className="w-full max-w-md mx-auto px-4 h-14 flex items-center justify-between">
           {/* Back button */}
           <button
             aria-label="Go back"
@@ -207,48 +268,26 @@ export const FiveStageLessonRunner: React.FC<FiveStageLessonRunnerProps> = ({
             onClick={handlePreviousStage}
             className={`w-10 h-10 rounded-full flex items-center justify-center transition-all active:scale-95 ${
               isDark
-                ? 'bg-[#171b26] border border-[#262c3d] text-slate-200 hover:text-white shadow-sm'
-                : 'silk-button-icon text-slate-700 hover:text-slate-900'
+                ? 'text-slate-200 hover:text-white hover:bg-white/10'
+                : 'text-slate-700 hover:text-slate-900 hover:bg-slate-100'
             }`}
           >
-            <span className="material-symbols-outlined text-[20px]">arrow_back</span>
+            <span className="material-symbols-outlined text-[22px]">arrow_back</span>
           </button>
 
-          {/* App & Lesson Title */}
-          <div className="flex flex-col items-center text-center">
-            <span
-              className={`font-['Outfit'] font-extrabold text-sm tracking-wider uppercase ${
-                isDark ? 'text-white' : 'text-slate-800'
+          {/* Current Step Name in Toolbar (Learn, Explore, Predict, Write & Run, Mastered) */}
+          <div className="flex flex-col items-center justify-center">
+            <h1
+              className={`font-['Outfit'] font-bold text-base tracking-tight ${
+                isDark ? 'text-white' : 'text-slate-900'
               }`}
             >
-              CODEDO LESSON
-            </span>
-            <span
-              className={`text-[11px] font-semibold ${
-                isDark ? 'text-slate-400' : 'text-slate-500'
-              }`}
-            >
-              {lessonData.topicTitle}
-            </span>
+              {STAGE_TITLES[currentStage] || 'Learn'}
+            </h1>
           </div>
 
-          {/* Action items group */}
-          <div className="flex items-center gap-2">
-            {/* Streak pill */}
-            <div
-              className={`h-9 px-3 rounded-full flex items-center gap-1.5 text-xs font-bold ${
-                isDark
-                  ? 'bg-[#171b26] border border-[#262c3d] text-slate-200'
-                  : 'silk-button-icon text-slate-700'
-              }`}
-            >
-              <span className="material-symbols-outlined text-amber-500 text-[18px] filled">
-                local_fire_department
-              </span>
-              <span className="font-['Outfit'] font-bold text-xs">{userStats.streak || 5}</span>
-            </div>
-
-            {/* Options menu button / Theme toggle */}
+          {/* Theme Toggle Button (Removed streak and profile icon) */}
+          <div className="flex items-center">
             {onToggleTheme ? (
               <button
                 aria-label="Toggle theme"
@@ -256,81 +295,73 @@ export const FiveStageLessonRunner: React.FC<FiveStageLessonRunnerProps> = ({
                 onClick={onToggleTheme}
                 className={`w-9 h-9 rounded-full flex items-center justify-center transition-all active:scale-95 ${
                   isDark
-                    ? 'bg-[#171b26] border border-[#262c3d] text-amber-400 hover:text-white'
-                    : 'silk-button-icon text-slate-700 hover:text-slate-900'
+                    ? 'text-amber-400 hover:text-white hover:bg-white/10'
+                    : 'text-slate-700 hover:text-slate-900 hover:bg-slate-100'
                 }`}
                 title={isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
               >
-                <span className="material-symbols-outlined text-[18px]">
+                <span className="material-symbols-outlined text-[20px]">
                   {isDark ? 'light_mode' : 'dark_mode'}
                 </span>
               </button>
             ) : (
-              <button
-                aria-label="Menu options"
-                type="button"
-                className={`w-9 h-9 rounded-full flex items-center justify-center ${
-                  isDark
-                    ? 'bg-[#171b26] border border-[#262c3d] text-slate-200'
-                    : 'silk-button-icon text-slate-700'
-                }`}
-              >
-                <span className="material-symbols-outlined text-[18px]">more_vert</span>
-              </button>
+              <div className="w-9" />
             )}
-
-            {/* User avatar */}
-            <div className="w-9 h-9 rounded-full bg-indigo-600 text-white flex items-center justify-center font-bold text-xs shadow-md shadow-indigo-600/30">
-              <span className="material-symbols-outlined text-[18px]">person</span>
-            </div>
           </div>
-        </header>
+        </div>
+      </header>
 
-        {/* ================= 2. UNIVERSAL STAGE + PROGRESS BANNER ================= */}
+      {/* Main Content Area */}
+      <div className="w-full max-w-md px-4 pt-3 flex flex-col">
+        {/* ================= PROGRESS STRIP (SHOWS LESSON NAME + STEP PROGRESS) ================= */}
         <section
-          className={`mt-1 mb-5 flex items-center justify-between px-4 py-2.5 rounded-2xl border transition-all ${
+          className={`mb-4 flex items-center justify-between px-4 py-2.5 rounded-2xl border transition-all ${
             isDark
               ? 'bg-[#171b26] border-[#262c3d] shadow-sm'
               : 'bg-white/90 backdrop-blur-sm border-slate-200/80 shadow-sm'
           }`}
         >
-          <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-indigo-600"></span>
+          <div className="flex items-center gap-2 min-w-0 pr-2">
+            <span className="w-2 h-2 rounded-full bg-indigo-600 shrink-0"></span>
             <span
-              className={`font-['Outfit'] font-semibold text-[11px] tracking-wider uppercase ${
+              className={`font-['Outfit'] font-semibold text-xs tracking-wide truncate ${
                 isDark ? 'text-indigo-300' : 'text-indigo-900'
               }`}
             >
-              {lessonData.stageName}
+              {lessonData.topicTitle}
             </span>
           </div>
-          {/* Dots Indicator only - text removed per specification */}
-          <div className="flex items-center gap-1.5">
-            {[1, 2, 3, 4, 5].map((step) => {
-              const isActive = step === currentStage;
-              const isPassed = step < currentStage;
-              return (
-                <button
-                  key={step}
-                  type="button"
-                  onClick={() => {
-                    soundFX.playClick();
-                    setCurrentStage(step);
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                  }}
-                  className={`rounded-full transition-all ${
-                    isActive
-                      ? 'w-2 h-2 bg-indigo-600 ring-2 ring-indigo-300 dark:ring-indigo-500/40'
-                      : isPassed
-                      ? 'w-2 h-2 bg-indigo-600'
-                      : isDark
-                      ? 'w-1.5 h-1.5 bg-slate-700'
-                      : 'w-1.5 h-1.5 bg-slate-300'
-                  }`}
-                  title={`Step ${step} of 5`}
-                />
-              );
-            })}
+          <div className="flex items-center gap-2 shrink-0">
+            <span
+              className={`font-['Outfit'] font-bold text-[11px] tracking-wider uppercase ${
+                isDark ? 'text-slate-400' : 'text-slate-500'
+              }`}
+            >
+              STEP {currentStage} OF 5
+            </span>
+            <div className="flex items-center gap-1.5 ml-0.5">
+              {[1, 2, 3, 4, 5].map((step) => {
+                const isActive = step === currentStage;
+                const isPassed = step < currentStage;
+                return (
+                  <button
+                    key={step}
+                    type="button"
+                    onClick={() => handleJumpToStage(step)}
+                    className={`rounded-full transition-all ${
+                      isActive
+                        ? 'w-2.5 h-2.5 bg-indigo-600 ring-2 ring-indigo-300 dark:ring-indigo-500/40'
+                        : isPassed
+                        ? 'w-2 h-2 bg-indigo-600'
+                        : isDark
+                        ? 'w-1.5 h-1.5 bg-slate-700'
+                        : 'w-1.5 h-1.5 bg-slate-300'
+                    }`}
+                    title={`Step ${step} of 5: ${STAGE_TITLES[step]}`}
+                  />
+                );
+              })}
+            </div>
           </div>
         </section>
 
@@ -531,11 +562,17 @@ export const FiveStageLessonRunner: React.FC<FiveStageLessonRunnerProps> = ({
               </p>
             </section>
 
-            {/* Example Navigation Indicator */}
-            <section className="flex items-center justify-between mb-5 px-0.5">
+            {/* Sticky Example Navigation Indicator */}
+            <section
+              className={`sticky top-14 z-30 py-2.5 px-3 mb-5 rounded-2xl flex items-center justify-between border backdrop-blur-md shadow-sm transition-all ${
+                isDark
+                  ? 'bg-[#171b26]/95 border-[#262c3d] shadow-black/20'
+                  : 'bg-white/95 border-slate-200/90 shadow-slate-900/5'
+              }`}
+            >
               <span
                 className={`text-[11px] font-['Outfit'] font-bold uppercase tracking-wider ${
-                  isDark ? 'text-slate-400' : 'text-slate-400'
+                  isDark ? 'text-slate-400' : 'text-slate-500'
                 }`}
               >
                 {lessonData.explore.cards.length} EXAMPLES
@@ -549,14 +586,19 @@ export const FiveStageLessonRunner: React.FC<FiveStageLessonRunnerProps> = ({
                       soundFX.playClick();
                       setExploreCardIndex(idx);
                       const el = document.getElementById(`explore-card-${idx}`);
-                      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                      if (el) {
+                        const headerOffset = 120;
+                        const elementPosition = el.getBoundingClientRect().top;
+                        const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+                        window.scrollTo({ top: offsetPosition, behavior: 'smooth' });
+                      }
                     }}
-                    className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full transition-all ${
+                    className={`text-xs font-bold px-3 py-1 rounded-full transition-all ${
                       exploreCardIndex === idx
-                        ? 'bg-indigo-600 text-white shadow-xs'
+                        ? 'bg-indigo-600 text-white shadow-sm scale-105'
                         : isDark
-                        ? 'bg-[#171b26] text-slate-400 border border-[#262c3d] hover:text-white'
-                        : 'bg-white text-slate-500 border border-slate-200'
+                        ? 'bg-[#0f131d] text-slate-400 border border-[#262c3d] hover:text-white'
+                        : 'bg-slate-100 text-slate-600 border border-slate-200 hover:text-slate-900'
                     }`}
                   >
                     {card.number}
@@ -749,202 +791,271 @@ export const FiveStageLessonRunner: React.FC<FiveStageLessonRunnerProps> = ({
               </p>
             </section>
 
-            {/* Question Progress Indicator */}
-            <div className="flex items-center justify-between px-1 mb-3">
+            {/* Sticky Question Navigation Chips */}
+            <section
+              className={`sticky top-14 z-30 py-2.5 px-3 mb-5 rounded-2xl flex items-center justify-between border backdrop-blur-md shadow-sm transition-all ${
+                isDark
+                  ? 'bg-[#171b26]/95 border-[#262c3d] shadow-black/20'
+                  : 'bg-white/95 border-slate-200/90 shadow-slate-900/5'
+              }`}
+            >
               <span
-                className={`text-[11px] font-semibold tracking-wider uppercase ${
+                className={`text-[11px] font-['Outfit'] font-bold uppercase tracking-wider ${
                   isDark ? 'text-slate-400' : 'text-slate-500'
                 }`}
               >
-                QUESTION {currentPredictQ.questionNumber} OF {currentPredictQ.totalQuestions}
+                {lessonData.predict.questions.length} QUESTIONS
               </span>
               <div className="flex items-center gap-1.5">
-                {[1, 2, 3, 4, 5].map((qNum) => (
-                  <button
-                    key={qNum}
-                    type="button"
-                    onClick={() => {
-                      if (lessonData.predict.questions[qNum - 1]) {
-                        soundFX.playClick();
-                        setPredictQuestionIndex(qNum - 1);
-                      }
-                    }}
-                    className={`w-2 h-2 rounded-full transition-all ${
-                      qNum === currentPredictQ.questionNumber
-                        ? 'bg-indigo-600 ring-2 ring-indigo-400/40'
-                        : isDark
-                        ? 'bg-slate-700'
-                        : 'bg-slate-300'
-                    }`}
-                  />
-                ))}
-              </div>
-            </div>
-
-            {/* Core Prediction Question Card */}
-            <article
-              className={`w-full rounded-2xl p-5 border mb-5 flex flex-col gap-4 transition-all ${
-                isDark
-                  ? 'bg-[#171b26] border-[#262c3d] shadow-lg'
-                  : 'bg-white border-slate-200/80 shadow-[6px_6px_14px_rgba(0,0,0,0.06),-6px_-6px_14px_rgba(255,255,255,0.7)]'
-              }`}
-            >
-              {/* Card Meta */}
-              <div className="flex items-center justify-between">
-                <div
-                  className={`flex items-center gap-1.5 text-xs font-medium ${
-                    isDark ? 'text-slate-400' : 'text-slate-500'
-                  }`}
-                >
-                  <span className="material-symbols-outlined text-[16px] text-purple-500">
-                    psychology
-                  </span>
-                  <span>
-                    Question {currentPredictQ.questionNumber} of {currentPredictQ.totalQuestions} • {currentPredictQ.topicMeta}
-                  </span>
-                </div>
-                <span
-                  className={`px-2.5 py-1 rounded-full text-[11px] font-semibold uppercase tracking-wider ${
-                    isDark
-                      ? 'bg-[#0f131d] text-indigo-400 border border-[#262c3d]'
-                      : 'bg-indigo-50 text-indigo-600 shadow-[inset_2px_2px_4px_rgba(0,0,0,0.06),inset_-2px_-2px_4px_rgba(255,255,255,0.6)]'
-                  }`}
-                >
-                  {currentPredictQ.language}
-                </span>
-              </div>
-
-              {/* Inset Carved Neomorphic Code Block */}
-              <div
-                className={`w-full rounded-xl p-4 overflow-x-auto ${
-                  isDark
-                    ? 'bg-[#0f131d] border border-[#262c3d] text-slate-200'
-                    : 'bg-slate-50 border border-slate-200/80 shadow-[inset_3px_3px_6px_rgba(0,0,0,0.05),inset_-3px_-3px_6px_rgba(255,255,255,0.5)]'
-                }`}
-              >
-                <pre className="font-mono text-xs leading-relaxed">
-                  {currentPredictQ.code.map((line, idx) => (
-                    <div key={idx} className="whitespace-pre">
-                      {line.startsWith('fun ') ? (
-                        <>
-                          <span className="text-purple-500 font-semibold">fun </span>
-                          <span className="text-indigo-500 font-semibold">
-                            {line.substring(4, line.indexOf('(') > -1 ? line.indexOf('(') : undefined)}
-                          </span>
-                          <span>{line.substring(line.indexOf('(') > -1 ? line.indexOf('(') : 4)}</span>
-                        </>
-                      ) : line.includes('println') ? (
-                        <span className="pl-4">
-                          <span className="font-semibold">println</span>(
-                          <span className="text-emerald-500">
-                            {line.substring(line.indexOf('(') + 1, line.lastIndexOf(')'))}
-                          </span>
-                          )
-                        </span>
-                      ) : (
-                        <span>{line}</span>
-                      )}
-                    </div>
-                  ))}
-                </pre>
-              </div>
-
-              {/* Question Title */}
-              <div>
-                <h2
-                  className={`text-base font-semibold tracking-tight ${
-                    isDark ? 'text-white' : 'text-slate-900'
-                  }`}
-                >
-                  {currentPredictQ.prompt}
-                </h2>
-              </div>
-
-              {/* Answer Options Grid */}
-              <div className="flex flex-col gap-2.5" role="radiogroup">
-                {currentPredictQ.options.map((opt) => {
-                  const isSelected = selectedPredictOption === opt.id;
-                  const isCorrect = opt.isCorrect;
+                {lessonData.predict.questions.map((q, idx) => {
+                  const isAnswered = predictAnswers[idx] !== undefined;
+                  const isSelected = activePredictCardIdx === idx;
                   return (
                     <button
-                      key={opt.id}
+                      key={q.id}
                       type="button"
-                      onClick={() => handleSelectPredictOption(opt.id)}
-                      className={`w-full p-3.5 rounded-xl flex items-center justify-between text-left transition-all border ${
+                      onClick={() => {
+                        soundFX.playClick();
+                        setActivePredictCardIdx(idx);
+                        const el = document.getElementById(`predict-q-${idx}`);
+                        if (el) {
+                          const headerOffset = 120;
+                          const elementPosition = el.getBoundingClientRect().top;
+                          const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+                          window.scrollTo({ top: offsetPosition, behavior: 'smooth' });
+                        }
+                      }}
+                      className={`text-xs font-bold px-2.5 py-1 rounded-full transition-all flex items-center gap-1 ${
                         isSelected
+                          ? 'bg-indigo-600 text-white shadow-sm scale-105'
+                          : isAnswered
                           ? isDark
-                            ? 'bg-indigo-950/60 border-indigo-500 shadow-inner'
-                            : 'bg-indigo-50 border-indigo-500 text-indigo-900 shadow-[inset_3px_3px_6px_rgba(0,0,0,0.06),inset_-3px_-3px_6px_rgba(255,255,255,0.6)]'
+                            ? 'bg-indigo-950/70 text-indigo-300 border border-indigo-700/50'
+                            : 'bg-indigo-50 text-indigo-700 border border-indigo-200'
                           : isDark
-                          ? 'bg-[#0f131d] border-[#262c3d] text-slate-300 hover:border-indigo-500/40'
-                          : 'bg-white border-slate-200/80 shadow-[3px_3px_8px_rgba(0,0,0,0.04),-3px_-3px_8px_rgba(255,255,255,0.6)] text-slate-800'
+                          ? 'bg-[#0f131d] text-slate-400 border border-[#262c3d] hover:text-white'
+                          : 'bg-slate-100 text-slate-600 border border-slate-200 hover:text-slate-900'
                       }`}
                     >
-                      <div className="flex items-center gap-3">
-                        <span
-                          className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold ${
-                            isSelected
-                              ? 'bg-indigo-600 text-white shadow-sm font-bold'
-                              : isDark
-                              ? 'bg-[#171b26] text-slate-400'
-                              : 'bg-slate-100 text-slate-600'
-                          }`}
-                        >
-                          {opt.id}
-                        </span>
-                        <span className={`text-sm ${isSelected ? 'font-semibold text-indigo-600 dark:text-indigo-300' : 'font-medium'}`}>
-                          {opt.label}
-                        </span>
-                      </div>
-
-                      {isSelected ? (
-                        <div className="w-6 h-6 rounded-full bg-indigo-600 text-white flex items-center justify-center shadow-sm">
-                          <span className="material-symbols-outlined text-[16px]">
-                            {isCorrect ? 'check' : 'check'}
-                          </span>
-                        </div>
-                      ) : (
-                        <span
-                          className={`w-4 h-4 rounded-full border ${
-                            isDark
-                              ? 'border-slate-600 bg-[#0f131d]'
-                              : 'border-slate-300 bg-slate-100 shadow-inner'
-                          }`}
-                        />
+                      <span>{String(idx + 1).padStart(2, '0')}</span>
+                      {isAnswered && (
+                        <span className="material-symbols-outlined text-[13px]">check</span>
                       )}
                     </button>
                   );
                 })}
               </div>
+            </section>
 
-              {/* Feedback & Explanation (Neomorphic Inset Bay) */}
-              {hasCheckedPredict && (
-                <div
-                  className={`mt-1 p-3.5 rounded-xl border flex flex-col gap-1.5 animate-fadeIn ${
-                    isDark
-                      ? 'bg-[#0f131d] border-indigo-500/40 text-slate-200'
-                      : 'bg-indigo-50/70 border-indigo-200/80 shadow-[inset_3px_3px_6px_rgba(0,0,0,0.05),inset_-3px_-3px_6px_rgba(255,255,255,0.6)]'
-                  }`}
-                >
-                  <div className="flex items-center gap-1.5 text-indigo-600 dark:text-indigo-400">
-                    <span className="material-symbols-outlined text-[18px]">check_circle</span>
-                    <span className="text-xs font-semibold uppercase tracking-wider font-['Outfit']">
-                      Correct!
-                    </span>
-                  </div>
-                  <p
-                    className={`text-xs leading-relaxed font-medium ${
-                      isDark ? 'text-slate-300' : 'text-slate-600'
+            {/* All 5 Prediction Question Cards */}
+            <div className="space-y-6 mb-6">
+              {lessonData.predict.questions.map((question, qIdx) => {
+                const selectedOptId = predictAnswers[qIdx];
+                const hasAnswered = selectedOptId !== undefined;
+                const selectedOpt = question.options.find((o) => o.id === selectedOptId);
+                const isCorrect = selectedOpt?.isCorrect ?? false;
+
+                return (
+                  <article
+                    key={question.id}
+                    id={`predict-q-${qIdx}`}
+                    onClick={() => setActivePredictCardIdx(qIdx)}
+                    className={`w-full rounded-2xl p-5 border flex flex-col gap-4 transition-all ${
+                      isDark
+                        ? 'bg-[#171b26] border-[#262c3d] shadow-lg'
+                        : 'bg-white border-slate-200/80 shadow-[6px_6px_14px_rgba(0,0,0,0.06),-6px_-6px_14px_rgba(255,255,255,0.7)]'
                     }`}
                   >
-                    <code className="text-indigo-600 dark:text-indigo-400 font-mono text-[11px]">
-                      {currentPredictQ.explanation.codeRef}
-                    </code>{' '}
-                    {currentPredictQ.explanation.detail}
-                  </p>
-                </div>
-              )}
-            </article>
+                    {/* Card Meta */}
+                    <div className="flex items-center justify-between">
+                      <div
+                        className={`flex items-center gap-1.5 text-xs font-medium ${
+                          isDark ? 'text-slate-400' : 'text-slate-500'
+                        }`}
+                      >
+                        <span className="material-symbols-outlined text-[16px] text-purple-500">
+                          psychology
+                        </span>
+                        <span>
+                          Question {question.questionNumber} of {question.totalQuestions} • {question.topicMeta}
+                        </span>
+                      </div>
+                      <span
+                        className={`px-2.5 py-1 rounded-full text-[11px] font-semibold uppercase tracking-wider ${
+                          isDark
+                            ? 'bg-[#0f131d] text-indigo-400 border border-[#262c3d]'
+                            : 'bg-indigo-50 text-indigo-600 shadow-[inset_2px_2px_4px_rgba(0,0,0,0.06),inset_-2px_-2px_4px_rgba(255,255,255,0.6)]'
+                        }`}
+                      >
+                        {question.language}
+                      </span>
+                    </div>
+
+                    {/* Inset Carved Neomorphic Code Block */}
+                    <div
+                      className={`w-full rounded-xl p-4 overflow-x-auto ${
+                        isDark
+                          ? 'bg-[#0f131d] border border-[#262c3d] text-slate-200'
+                          : 'bg-slate-50 border border-slate-200/80 shadow-[inset_3px_3px_6px_rgba(0,0,0,0.05),inset_-3px_-3px_6px_rgba(255,255,255,0.5)]'
+                      }`}
+                    >
+                      <pre className="font-mono text-xs leading-relaxed">
+                        {question.code.map((line, idx) => (
+                          <div key={idx} className="whitespace-pre">
+                            {line.startsWith('fun ') ? (
+                              <>
+                                <span className="text-purple-500 font-semibold">fun </span>
+                                <span className="text-indigo-500 font-semibold">
+                                  {line.substring(4, line.indexOf('(') > -1 ? line.indexOf('(') : undefined)}
+                                </span>
+                                <span>{line.substring(line.indexOf('(') > -1 ? line.indexOf('(') : 4)}</span>
+                              </>
+                            ) : line.includes('println') ? (
+                              <span className="pl-4">
+                                <span className="font-semibold">println</span>(
+                                <span className="text-emerald-500">
+                                  {line.substring(line.indexOf('(') + 1, line.lastIndexOf(')'))}
+                                </span>
+                                )
+                              </span>
+                            ) : (
+                              <span>{line}</span>
+                            )}
+                          </div>
+                        ))}
+                      </pre>
+                    </div>
+
+                    {/* Question Title */}
+                    <div>
+                      <h2
+                        className={`text-base font-semibold tracking-tight ${
+                          isDark ? 'text-white' : 'text-slate-900'
+                        }`}
+                      >
+                        {question.prompt}
+                      </h2>
+                    </div>
+
+                    {/* Answer Options Grid */}
+                    <div className="flex flex-col gap-2.5" role="radiogroup">
+                      {question.options.map((opt) => {
+                        const isSelected = selectedOptId === opt.id;
+                        return (
+                          <button
+                            key={opt.id}
+                            type="button"
+                            onClick={() => handleSelectPredictOption(qIdx, opt.id)}
+                            className={`w-full p-3.5 rounded-xl flex items-center justify-between text-left transition-all border ${
+                              isSelected
+                                ? isDark
+                                  ? opt.isCorrect
+                                    ? 'bg-emerald-950/50 border-emerald-500 text-emerald-200'
+                                    : 'bg-rose-950/50 border-rose-500 text-rose-200'
+                                  : opt.isCorrect
+                                  ? 'bg-emerald-50 border-emerald-500 text-emerald-900'
+                                  : 'bg-rose-50 border-rose-500 text-rose-900'
+                                : isDark
+                                ? 'bg-[#0f131d] border-[#262c3d] text-slate-300 hover:border-indigo-500/40'
+                                : 'bg-white border-slate-200/80 shadow-[3px_3px_8px_rgba(0,0,0,0.04),-3px_-3px_8px_rgba(255,255,255,0.6)] text-slate-800'
+                            }`}
+                          >
+                            <div className="flex items-center gap-3">
+                              <span
+                                className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold ${
+                                  isSelected
+                                    ? opt.isCorrect
+                                      ? 'bg-emerald-600 text-white font-bold'
+                                      : 'bg-rose-600 text-white font-bold'
+                                    : isDark
+                                    ? 'bg-[#171b26] text-slate-400'
+                                    : 'bg-slate-100 text-slate-600'
+                                }`}
+                              >
+                                {opt.id}
+                              </span>
+                              <span
+                                className={`text-sm ${
+                                  isSelected ? 'font-semibold' : 'font-medium'
+                                }`}
+                              >
+                                {opt.label}
+                              </span>
+                            </div>
+
+                            {isSelected ? (
+                              <div
+                                className={`w-6 h-6 rounded-full text-white flex items-center justify-center shadow-sm ${
+                                  opt.isCorrect ? 'bg-emerald-600' : 'bg-rose-600'
+                                }`}
+                              >
+                                <span className="material-symbols-outlined text-[16px]">
+                                  {opt.isCorrect ? 'check' : 'close'}
+                                </span>
+                              </div>
+                            ) : (
+                              <span
+                                className={`w-4 h-4 rounded-full border ${
+                                  isDark
+                                    ? 'border-slate-600 bg-[#0f131d]'
+                                    : 'border-slate-300 bg-slate-100 shadow-inner'
+                                }`}
+                              />
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    {/* Feedback & Explanation */}
+                    {hasAnswered && (
+                      <div
+                        className={`mt-1 p-3.5 rounded-xl border flex flex-col gap-1.5 animate-fadeIn ${
+                          isCorrect
+                            ? isDark
+                              ? 'bg-emerald-950/40 border-emerald-500/40 text-slate-200'
+                              : 'bg-emerald-50/80 border-emerald-200 text-emerald-950'
+                            : isDark
+                            ? 'bg-rose-950/40 border-rose-500/40 text-slate-200'
+                            : 'bg-rose-50/80 border-rose-200 text-rose-950'
+                        }`}
+                      >
+                        <div
+                          className={`flex items-center gap-1.5 ${
+                            isCorrect
+                              ? 'text-emerald-600 dark:text-emerald-400'
+                              : 'text-rose-600 dark:text-rose-400'
+                          }`}
+                        >
+                          <span className="material-symbols-outlined text-[18px]">
+                            {isCorrect ? 'check_circle' : 'info'}
+                          </span>
+                          <span className="text-xs font-semibold uppercase tracking-wider font-['Outfit']">
+                            {isCorrect ? 'Correct!' : 'Incorrect'}
+                          </span>
+                        </div>
+                        <p
+                          className={`text-xs leading-relaxed font-medium ${
+                            isDark ? 'text-slate-300' : 'text-slate-600'
+                          }`}
+                        >
+                          <code
+                            className={`font-mono text-[11px] ${
+                              isCorrect
+                                ? 'text-emerald-600 dark:text-emerald-400'
+                                : 'text-rose-600 dark:text-rose-400'
+                            }`}
+                          >
+                            {question.explanation.codeRef}
+                          </code>{' '}
+                          {question.explanation.detail}
+                        </p>
+                      </div>
+                    )}
+                  </article>
+                );
+              })}
+            </div>
 
             {/* Bottom CTA */}
             <div
@@ -956,14 +1067,10 @@ export const FiveStageLessonRunner: React.FC<FiveStageLessonRunnerProps> = ({
             >
               <button
                 type="button"
-                onClick={handleNextPredictQuestion}
+                onClick={handleNextStage}
                 className="w-full h-14 rounded-2xl bg-indigo-600 hover:bg-indigo-700 active:scale-[0.99] text-white font-['Outfit'] font-bold text-base shadow-lg shadow-indigo-600/35 flex items-center justify-center gap-2 transition-all"
               >
-                <span>
-                  {predictQuestionIndex < lessonData.predict.questions.length - 1
-                    ? 'Next Question'
-                    : 'Continue to Write & Run'}
-                </span>
+                <span>Continue to Write & Run</span>
                 <span className="material-symbols-outlined text-[20px]">arrow_forward</span>
               </button>
             </div>
@@ -1064,7 +1171,7 @@ export const FiveStageLessonRunner: React.FC<FiveStageLessonRunnerProps> = ({
                   : 'bg-white border-slate-100 shadow-[0_10px_25px_-3px_rgba(15,23,42,0.04)]'
               }`}
             >
-              <div className="flex items-center gap-1.5 mb-2.5">
+              <div className="flex items-center gap-1.5 mb-3">
                 <span className="material-symbols-outlined text-[16px] text-slate-400">
                   checklist
                 </span>
@@ -1072,50 +1179,50 @@ export const FiveStageLessonRunner: React.FC<FiveStageLessonRunnerProps> = ({
                   REQUIREMENTS
                 </h3>
               </div>
-              <div className="grid grid-cols-3 gap-2">
+              <div className="flex flex-col gap-2">
                 <div
-                  className={`p-2.5 rounded-xl border ${
-                    isDark ? 'bg-[#0f131d] border-[#262c3d]' : 'bg-slate-50 border-slate-100/80'
+                  className={`p-2.5 px-3 rounded-xl border flex items-center justify-between gap-3 ${
+                    isDark ? 'bg-[#0f131d] border-[#262c3d]' : 'bg-slate-50 border-slate-200/70'
                   }`}
                 >
-                  <span className="block text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider shrink-0">
                     NAME
                   </span>
                   <span
-                    className={`font-mono text-xs font-semibold ${
-                      isDark ? 'text-slate-200' : 'text-slate-800'
+                    className={`font-mono text-xs font-semibold px-2 py-0.5 rounded-md ${
+                      isDark ? 'text-indigo-300 bg-indigo-950/60' : 'text-indigo-700 bg-indigo-50'
                     }`}
                   >
                     {lessonData.writeRun.requirements.name}
                   </span>
                 </div>
                 <div
-                  className={`p-2.5 rounded-xl border ${
-                    isDark ? 'bg-[#0f131d] border-[#262c3d]' : 'bg-slate-50 border-slate-100/80'
+                  className={`p-2.5 px-3 rounded-xl border flex items-center justify-between gap-3 ${
+                    isDark ? 'bg-[#0f131d] border-[#262c3d]' : 'bg-slate-50 border-slate-200/70'
                   }`}
                 >
-                  <span className="block text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider shrink-0">
                     PARAMS
                   </span>
                   <span
-                    className={`font-mono text-xs font-semibold ${
-                      isDark ? 'text-slate-200' : 'text-slate-800'
+                    className={`font-mono text-xs font-semibold px-2 py-0.5 rounded-md break-all max-w-[70%] text-right ${
+                      isDark ? 'text-indigo-300 bg-indigo-950/60' : 'text-indigo-700 bg-indigo-50'
                     }`}
                   >
                     {lessonData.writeRun.requirements.params}
                   </span>
                 </div>
                 <div
-                  className={`p-2.5 rounded-xl border ${
-                    isDark ? 'bg-[#0f131d] border-[#262c3d]' : 'bg-slate-50 border-slate-100/80'
+                  className={`p-2.5 px-3 rounded-xl border flex items-center justify-between gap-3 ${
+                    isDark ? 'bg-[#0f131d] border-[#262c3d]' : 'bg-slate-50 border-slate-200/70'
                   }`}
                 >
-                  <span className="block text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider shrink-0">
                     RETURNS
                   </span>
                   <span
-                    className={`font-mono text-xs font-semibold ${
-                      isDark ? 'text-slate-200' : 'text-slate-800'
+                    className={`font-mono text-xs font-semibold px-2 py-0.5 rounded-md ${
+                      isDark ? 'text-indigo-300 bg-indigo-950/60' : 'text-indigo-700 bg-indigo-50'
                     }`}
                   >
                     {lessonData.writeRun.requirements.returns}
@@ -1124,7 +1231,7 @@ export const FiveStageLessonRunner: React.FC<FiveStageLessonRunnerProps> = ({
               </div>
             </section>
 
-            {/* Mobile-first Code Editor Surface */}
+            {/* Mobile-first Code Editor Surface (Expands vertically with code) */}
             <section className="rounded-2xl shadow-xl border border-slate-800 overflow-hidden mb-3 bg-[#0b1120]">
               {/* Editor Chrome Header */}
               <div className="flex items-center justify-between px-3.5 py-2.5 border-b border-slate-800/80 bg-[#090e1a]">
@@ -1141,6 +1248,7 @@ export const FiveStageLessonRunner: React.FC<FiveStageLessonRunnerProps> = ({
                   onClick={() => {
                     soundFX.playClick();
                     setUserCode(lessonData.writeRun.initialCode);
+                    setHasRunCode(false);
                   }}
                   className="text-slate-400 hover:text-slate-200 p-1 flex items-center transition-colors"
                   title="Reset Code"
@@ -1149,27 +1257,34 @@ export const FiveStageLessonRunner: React.FC<FiveStageLessonRunnerProps> = ({
                 </button>
               </div>
 
-              {/* Editor Body */}
-              <div className="p-3.5 font-mono text-xs leading-relaxed flex gap-3 text-slate-300">
-                {/* Line Numbers */}
-                <div className="text-slate-600 select-none text-right font-mono flex flex-col gap-0.5 text-[11px] pt-0.5">
-                  <span>1</span>
-                  <span>2</span>
-                  <span>3</span>
-                  <span>4</span>
-                </div>
+              {/* Editor Body - Auto-expands vertically */}
+              {(() => {
+                const lines = userCode.split('\n');
+                const lineCount = Math.max(lines.length, 5);
+                return (
+                  <div className="p-3.5 font-mono text-xs leading-relaxed flex gap-3 text-slate-300">
+                    {/* Line Numbers */}
+                    <div className="text-slate-600 select-none text-right font-mono flex flex-col text-[11px] pt-0.5 leading-[1.625rem]">
+                      {Array.from({ length: lineCount }, (_, i) => (
+                        <span key={i + 1}>{i + 1}</span>
+                      ))}
+                    </div>
 
-                {/* Code Content & Input */}
-                <div className="flex-1 font-mono text-xs leading-relaxed text-slate-200">
-                  <textarea
-                    value={userCode}
-                    onChange={(e) => setUserCode(e.target.value)}
-                    className="w-full h-24 bg-transparent border-0 outline-none text-indigo-300 font-mono text-xs leading-relaxed resize-none p-0 focus:ring-0"
-                    spellCheck={false}
-                  />
-                  <div className="text-slate-500 italic text-[11px] pt-1">// Ready to execute</div>
-                </div>
-              </div>
+                    {/* Code Content & Input */}
+                    <div className="flex-1 font-mono text-xs leading-relaxed text-slate-200 min-w-0">
+                      <textarea
+                        value={userCode}
+                        rows={lineCount}
+                        onChange={(e) => setUserCode(e.target.value)}
+                        className="w-full bg-transparent border-0 outline-none text-indigo-300 font-mono text-xs leading-[1.625rem] resize-none p-0 focus:ring-0 overflow-hidden block"
+                        style={{ height: `${lineCount * 1.625}rem` }}
+                        spellCheck={false}
+                      />
+                      <div className="text-slate-500 italic text-[11px] pt-1">// Ready to execute</div>
+                    </div>
+                  </div>
+                );
+              })()}
             </section>
 
             {/* Run Code Button */}
@@ -1183,91 +1298,25 @@ export const FiveStageLessonRunner: React.FC<FiveStageLessonRunnerProps> = ({
             </button>
 
             {/* Actual Output Card */}
-            <section
-              className={`rounded-2xl p-4 border mb-3 ${
-                isDark
-                  ? 'bg-[#171b26] border-[#262c3d]'
-                  : 'bg-white border-slate-100 shadow-[0_10px_25px_-3px_rgba(15,23,42,0.04)]'
-              }`}
-            >
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider font-['Outfit']">
-                  ACTUAL OUTPUT
-                </span>
-                <span className="text-[10px] font-mono text-emerald-600 font-semibold bg-emerald-50 px-2 py-0.5 rounded-md">
-                  Return value
-                </span>
-              </div>
-              <div className="bg-slate-900 text-slate-100 p-3 rounded-xl font-mono text-sm font-semibold tracking-wide border border-slate-800">
-                {actualOutput}
-              </div>
-            </section>
-
-            {/* Test Results Card */}
-            <section
-              className={`rounded-2xl p-4 border mb-3 ${
-                isDark
-                  ? 'bg-[#171b26] border-[#262c3d]'
-                  : 'bg-white border-slate-100 shadow-[0_10px_25px_-3px_rgba(15,23,42,0.04)]'
-              }`}
-            >
-              <div className="flex items-center justify-between mb-2.5">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider font-['Outfit']">
-                  TEST RESULTS
-                </span>
-                <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full">
-                  1/1 PASSED
-                </span>
-              </div>
-              <div className="space-y-1.5">
-                <div
-                  className={`flex items-center justify-between p-2 rounded-xl border text-xs ${
-                    isDark ? 'bg-[#0f131d] border-[#262c3d]' : 'bg-slate-50 border-slate-100'
-                  }`}
-                >
-                  <div className="flex items-center gap-2">
-                    <span className="material-symbols-outlined text-emerald-600 text-[16px] font-bold">
-                      check_circle
-                    </span>
-                    <span
-                      className={`font-mono text-[11px] ${
-                        isDark ? 'text-slate-300' : 'text-slate-700'
-                      }`}
-                    >
-                      {lessonData.writeRun.testCase.call}
-                    </span>
-                  </div>
-                  <div className="text-[11px] text-slate-500 font-mono">
-                    Expected:{' '}
-                    <span
-                      className={`font-bold ${isDark ? 'text-emerald-400' : 'text-slate-800'}`}
-                    >
-                      {lessonData.writeRun.testCase.expected}
-                    </span>
-                  </div>
+            {hasRunCode && (
+              <section
+                className={`rounded-2xl p-4 border mb-4 animate-fadeIn ${
+                  isDark
+                    ? 'bg-[#171b26] border-[#262c3d]'
+                    : 'bg-white border-slate-100 shadow-[0_10px_25px_-3px_rgba(15,23,42,0.04)]'
+                }`}
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider font-['Outfit']">
+                    OUTPUT
+                  </span>
+                  <span className="text-[10px] font-mono text-emerald-600 font-semibold bg-emerald-50 px-2 py-0.5 rounded-md">
+                    Return value
+                  </span>
                 </div>
-              </div>
-            </section>
-
-            {/* Success Feedback */}
-            {testPassed && (
-              <section className="bg-emerald-50/80 dark:bg-emerald-950/40 border border-emerald-200/80 dark:border-emerald-800/40 rounded-2xl p-3.5 flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-xl bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-sm">
-                    <span className="material-symbols-outlined text-[18px]">verified</span>
-                  </div>
-                  <div>
-                    <h4 className="text-xs font-bold text-emerald-900 dark:text-emerald-300">
-                      All test conditions satisfied!
-                    </h4>
-                    <p className="text-[11px] text-emerald-700 dark:text-emerald-400 font-medium">
-                      Clean execution • 0ms overhead
-                    </p>
-                  </div>
-                </div>
-                <div className="px-2.5 py-1 rounded-full bg-emerald-600 text-white text-[10px] font-bold flex items-center gap-1 shadow-sm">
-                  <span className="material-symbols-outlined text-[13px] filled">bolt</span>
-                  <span>+{lessonData.writeRun.xpReward} XP</span>
+                <div className="bg-slate-900 text-emerald-400 p-3.5 rounded-xl font-mono text-sm font-semibold tracking-wide border border-slate-800 flex items-center justify-between">
+                  <span>{actualOutput}</span>
+                  <span className="text-xs text-slate-400 font-sans font-normal">Executed in 12ms</span>
                 </div>
               </section>
             )}
