@@ -159,15 +159,22 @@ export const FiveStageLessonRunner: React.FC<FiveStageLessonRunnerProps> = ({
   // Sync scroll position with Step 2 (Explore) example chips
   useEffect(() => {
     if (currentStage !== 2) return;
+    let ticking = false;
     const handleScroll = () => {
-      const cards = lessonData.explore.cards;
-      const scrollPos = window.scrollY + 140;
-      for (let i = cards.length - 1; i >= 0; i--) {
-        const el = document.getElementById(`explore-card-${i}`);
-        if (el && el.offsetTop <= scrollPos) {
-          setExploreCardIndex(i);
-          break;
-        }
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          const cards = lessonData.explore.cards;
+          const scrollPos = window.scrollY + 140;
+          for (let i = cards.length - 1; i >= 0; i--) {
+            const el = document.getElementById(`explore-card-${i}`);
+            if (el && el.offsetTop <= scrollPos) {
+              setExploreCardIndex((prev) => (prev !== i ? i : prev));
+              break;
+            }
+          }
+          ticking = false;
+        });
+        ticking = true;
       }
     };
     window.addEventListener('scroll', handleScroll, { passive: true });
@@ -177,15 +184,22 @@ export const FiveStageLessonRunner: React.FC<FiveStageLessonRunnerProps> = ({
   // Sync scroll position with Step 3 (Predict) question chips
   useEffect(() => {
     if (currentStage !== 3) return;
+    let ticking = false;
     const handleScroll = () => {
-      const questions = lessonData.predict.questions;
-      const scrollPos = window.scrollY + 140;
-      for (let i = questions.length - 1; i >= 0; i--) {
-        const el = document.getElementById(`predict-q-${i}`);
-        if (el && el.offsetTop <= scrollPos) {
-          setActivePredictCardIdx(i);
-          break;
-        }
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          const questions = lessonData.predict.questions;
+          const scrollPos = window.scrollY + 140;
+          for (let i = questions.length - 1; i >= 0; i--) {
+            const el = document.getElementById(`predict-q-${i}`);
+            if (el && el.offsetTop <= scrollPos) {
+              setActivePredictCardIdx((prev) => (prev !== i ? i : prev));
+              break;
+            }
+          }
+          ticking = false;
+        });
+        ticking = true;
       }
     };
     window.addEventListener('scroll', handleScroll, { passive: true });
@@ -254,7 +268,7 @@ export const FiveStageLessonRunner: React.FC<FiveStageLessonRunnerProps> = ({
     >
       {/* ================= STICKY ELEVATED TOOLBAR (NATIVE ANDROID STYLE) ================= */}
       <header
-        className={`sticky top-0 z-50 w-full transition-all duration-200 border-b ${
+        className={`sticky top-0 z-50 w-full transition-colors duration-200 border-b ${
           isDark
             ? 'bg-[#0f131d]/95 backdrop-blur-md border-[#262c3d] shadow-[0_4px_16px_rgba(0,0,0,0.6)]'
             : 'bg-white/95 backdrop-blur-md border-slate-200/90 shadow-[0_2px_8px_rgba(0,0,0,0.06),0_1px_3px_rgba(0,0,0,0.04)]'
@@ -564,7 +578,7 @@ export const FiveStageLessonRunner: React.FC<FiveStageLessonRunnerProps> = ({
 
             {/* Sticky Example Navigation Indicator */}
             <section
-              className={`sticky top-14 z-30 py-2.5 px-3 mb-5 rounded-2xl flex items-center justify-between border backdrop-blur-md shadow-sm transition-all ${
+              className={`sticky top-14 z-30 py-2.5 px-3 mb-5 rounded-2xl flex items-center justify-between border backdrop-blur-md shadow-sm transition-colors duration-200 ${
                 isDark
                   ? 'bg-[#171b26]/95 border-[#262c3d] shadow-black/20'
                   : 'bg-white/95 border-slate-200/90 shadow-slate-900/5'
@@ -793,7 +807,7 @@ export const FiveStageLessonRunner: React.FC<FiveStageLessonRunnerProps> = ({
 
             {/* Sticky Question Navigation Chips */}
             <section
-              className={`sticky top-14 z-30 py-2.5 px-3 mb-5 rounded-2xl flex items-center justify-between border backdrop-blur-md shadow-sm transition-all ${
+              className={`sticky top-14 z-30 py-2.5 px-3 mb-5 rounded-2xl flex items-center justify-between border backdrop-blur-md shadow-sm transition-colors duration-200 ${
                 isDark
                   ? 'bg-[#171b26]/95 border-[#262c3d] shadow-black/20'
                   : 'bg-white/95 border-slate-200/90 shadow-slate-900/5'

@@ -7,6 +7,14 @@
     --font-mono: 'JetBrains Mono', monospace;
   }
 
+  html,
+  body,
+  #root {
+    overscroll-behavior: none;
+    overscroll-behavior-y: none;
+    -webkit-overflow-scrolling: touch;
+  }
+
   body {
     font-family: var(--font-jakarta);
     -webkit-tap-highlight-color: transparent;
