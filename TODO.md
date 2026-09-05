@@ -36,7 +36,7 @@
 - [x] World 7 (Generics & Advanced Type System) full lesson expansion: 5 lessons + Type Alchemist Boss (26 questions complete)
 - [x] World 8 (Coroutines & Asynchronous Kotlin) full lesson expansion: 5 lessons + Async Overlord Boss (26 questions complete)
 - [x] World 9 (Android & Jetpack Compose Fundamentals) full lesson expansion: 5 lessons + Compose Architect Boss (26 questions complete)
-- [ ] World 10: Real-World Architecture & Clean Code curriculum data authoring
+- [x] World 10 (Real-World Architecture & Clean Code) full lesson expansion: 5 lessons + Grandmaster Capstone Boss (26 questions complete)
 - [ ] Enforce "Today's Goal Complete" celebratory card when 3 daily core lessons are finished
 
 ### Phase 2: Retention & Practice Lab

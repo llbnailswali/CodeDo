@@ -5,7 +5,6 @@ import { soundFX } from '../utils/audio';
 interface HeaderProps {
   theme: AppTheme;
   activeTab: TabType;
-  onOpenDrawer: () => void;
   userStats: UserStats;
   onProfileClick: () => void;
   onToggleTheme: () => void;
@@ -17,7 +16,6 @@ interface HeaderProps {
 export const Header: React.FC<HeaderProps> = ({
   theme,
   activeTab,
-  onOpenDrawer,
   userStats,
   onProfileClick,
   onToggleTheme,
@@ -25,17 +23,19 @@ export const Header: React.FC<HeaderProps> = ({
   showBack,
   onBack,
 }) => {
+  const isDark = theme === 'dark';
+
   return (
     <header
-      className={`sticky top-0 w-full z-40 backdrop-blur-xl transition-colors duration-200 ${
-        theme === 'dark'
-          ? 'bg-[#0b0f19]/90 border-b border-white/[0.06] text-white shadow-[0_4px_20px_rgba(0,0,0,0.5)]'
-          : 'bg-[#f8f9fb]/90 border-b border-black/[0.04] text-[#191c1e] shadow-[0_1px_8px_rgba(0,0,0,0.03)]'
+      className={`sticky top-0 w-full z-40 backdrop-blur-xl transition-colors duration-200 border-b ${
+        isDark
+          ? 'bg-[#0b0f19]/90 border-white/5 text-[#dfe2f1] shadow-[0_4px_20px_rgba(0,0,0,0.5)]'
+          : 'bg-[#e8eaf0]/90 border-white/40 text-[#1e2433] shadow-[0_4px_20px_rgba(0,0,0,0.03)]'
       }`}
     >
-      <div className="h-16 px-4 flex items-center justify-between max-w-md mx-auto w-full">
-        {/* Left Side */}
-        <div className="flex items-center gap-2">
+      <div className="h-14 px-4 flex items-center justify-between max-w-md mx-auto w-full">
+        {/* Left Side: Brand Logo & Title (No Hamburger Icon) */}
+        <div className="flex items-center gap-2.5">
           {showBack ? (
             <button
               aria-label="Go back"
@@ -43,159 +43,81 @@ export const Header: React.FC<HeaderProps> = ({
                 soundFX.playClick();
                 onBack?.();
               }}
-              className={`w-11 h-11 rounded-full flex items-center justify-center active:scale-95 transition-all ${
-                theme === 'dark'
-                  ? 'bg-[#162036] border border-[#2a374f] text-slate-200 hover:border-indigo-400/40'
-                  : 'bg-[#f8f9fb] neumorph-raised-soft text-[#191c1e]'
+              className={`w-9 h-9 rounded-xl neu-raised flex items-center justify-center active:neu-pressed transition-all ${
+                isDark ? 'bg-[#151b28] text-slate-200' : 'bg-[#e8eaf0] text-[#1e2433]'
               }`}
             >
               <span className="material-symbols-outlined text-[20px]">arrow_back</span>
             </button>
           ) : (
-            <button
-              aria-label="Open drawer navigation"
-              onClick={() => {
-                soundFX.playClick();
-                onOpenDrawer();
-              }}
-              className={`w-11 h-11 rounded-full flex items-center justify-center active:scale-95 transition-transform ${
-                theme === 'dark'
-                  ? 'bg-[#131b2e] border border-white/10 text-[#dfe2f1] shadow-inner'
-                  : 'bg-[#f8f9fb] neumorph-raised-soft text-[#191c1e]'
+            <div
+              className={`w-9 h-9 rounded-xl neu-raised flex items-center justify-center p-1.5 overflow-hidden ${
+                isDark ? 'bg-[#151b28]' : 'bg-[#e8eaf0]'
               }`}
             >
-              <span className="material-symbols-outlined text-[20px]">menu</span>
-            </button>
+              <div className="w-full h-full rounded-lg bg-gradient-to-tr from-indigo-600 to-indigo-500 flex items-center justify-center text-white font-bold text-xs shadow-sm">
+                {`{ }`}
+              </div>
+            </div>
           )}
 
           {title ? (
-            <h1 className="font-['Outfit'] text-[18px] font-bold text-inherit truncate ml-1">
+            <h1 className="font-['Outfit'] text-base font-bold text-inherit truncate">
               {title}
             </h1>
           ) : (
-            <div className="flex items-center gap-2 pl-1">
-              <div
-                className={`w-8 h-8 rounded-full flex items-center justify-center font-['Outfit'] text-[15px] font-bold shadow-md ${
-                  theme === 'dark'
-                    ? 'bg-gradient-to-tr from-indigo-600 to-indigo-400 text-white shadow-indigo-500/30'
-                    : 'bg-[#3748dd] text-white'
-                }`}
-              >
-                {`{ }`}
-              </div>
-              <span className="font-['Outfit'] text-[22px] font-bold tracking-tight text-inherit">
-                Code
-                <span className={theme === 'dark' ? 'text-[#818cf8]' : 'text-[#3748dd]'}>
-                  Do
-                </span>
+            <div className="flex items-center gap-2">
+              <span className="font-['Outfit'] text-lg font-bold tracking-tight text-inherit">
+                CodeDo
+              </span>
+              <span className="text-[10px] font-mono font-bold tracking-wider uppercase px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20">
+                {activeTab === 'learn'
+                  ? 'LEARN'
+                  : activeTab === 'practice'
+                  ? 'PRACTICE'
+                  : activeTab === 'leaderboard'
+                  ? 'LEADERBOARD'
+                  : 'PROFILE'}
               </span>
             </div>
           )}
         </div>
 
-        {/* Right Side Gamified Stats or User Icon */}
+        {/* Right Side: Profile Avatar Button (No Streak, Star, or Gems in Toolbar) */}
         <div className="flex items-center gap-2">
-          {!showBack && (
-            <>
-              {/* Streak */}
-              <div
-                className={`h-8 px-2.5 rounded-full flex items-center gap-1.5 transition-all ${
-                  theme === 'dark'
-                    ? 'bg-[#1a2336] border border-[#2d3b55]'
-                    : 'bg-[#f8f9fb] neumorph-raised-soft'
-                }`}
-              >
-                <span
-                  className="material-symbols-outlined text-[16px] text-orange-500 icon-filled drop-shadow-[0_0_6px_rgba(249,115,22,0.6)]"
-                >
-                  local_fire_department
-                </span>
-                <span className="font-['JetBrains_Mono'] text-xs font-bold text-inherit">
-                  {userStats.streak}
-                </span>
-              </div>
-
-              {/* Stars */}
-              <div
-                className={`h-8 px-2.5 rounded-full flex items-center gap-1.5 transition-all ${
-                  theme === 'dark'
-                    ? 'bg-[#1a2336] border border-[#2d3b55]'
-                    : 'bg-[#f8f9fb] neumorph-raised-soft'
-                }`}
-              >
-                <span
-                  className="material-symbols-outlined text-[16px] text-amber-400 icon-filled drop-shadow-[0_0_6px_rgba(251,191,36,0.6)]"
-                >
-                  star
-                </span>
-                <span className="font-['JetBrains_Mono'] text-xs font-bold text-inherit">
-                  {(userStats.stars / 1000).toFixed(1)}k
-                </span>
-              </div>
-
-              {/* Gems */}
-              <div
-                className={`h-8 px-2.5 rounded-full flex items-center gap-1.5 transition-all ${
-                  theme === 'dark'
-                    ? 'bg-[#1a2336] border border-[#2d3b55]'
-                    : 'bg-[#f8f9fb] neumorph-raised-soft'
-                }`}
-              >
-                <span
-                  className={`material-symbols-outlined text-[16px] ${
-                    theme === 'dark' ? 'text-cyan-400 drop-shadow-[0_0_6px_rgba(34,211,238,0.6)]' : 'text-[#3748dd]'
-                  }`}
-                >
-                  diamond
-                </span>
-                <span className="font-['JetBrains_Mono'] text-xs font-bold text-inherit">
-                  {userStats.gems}
-                </span>
-              </div>
-            </>
-          )}
-
-          {/* Theme Quick Toggle */}
+          {/* Quick Theme Toggle */}
           <button
+            aria-label={`Switch to ${isDark ? 'light' : 'dark'} mode`}
+            title={`Switch to ${isDark ? 'light' : 'dark'} mode`}
             onClick={() => {
               soundFX.playClick();
               onToggleTheme();
             }}
-            aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
-            title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
-            className={`w-9 h-9 rounded-full flex items-center justify-center active:scale-95 transition-transform ${
-              theme === 'dark'
-                ? 'bg-[#162036] border border-[#2d3b55] text-amber-300 hover:text-amber-200 shadow-sm'
-                : 'bg-[#f8f9fb] neumorph-raised-soft text-slate-700 hover:text-[#3748dd]'
+            className={`w-9 h-9 rounded-xl neu-raised flex items-center justify-center active:neu-pressed transition-colors ${
+              isDark
+                ? 'bg-[#151b28] text-amber-400 hover:text-amber-300'
+                : 'bg-[#e8eaf0] text-slate-600 hover:text-indigo-600'
             }`}
           >
-            <span className="material-symbols-outlined text-[18px]">
-              {theme === 'dark' ? 'light_mode' : 'dark_mode'}
+            <span className="material-symbols-outlined text-[19px]">
+              {isDark ? 'light_mode' : 'dark_mode'}
             </span>
           </button>
 
-          {/* Profile / Avatar */}
+          {/* Profile Avatar Button */}
           <button
+            aria-label="User Profile"
             onClick={() => {
               soundFX.playClick();
               onProfileClick();
             }}
-            aria-label="View user profile"
-            className={`w-9 h-9 rounded-full flex items-center justify-center ml-0.5 active:scale-95 transition-transform ${
-              theme === 'dark'
-                ? 'bg-gradient-to-tr from-indigo-500 to-cyan-400 p-[1.5px] shadow-sm'
-                : 'bg-[#3748dd] text-white shadow-md'
+            className={`w-9 h-9 rounded-xl neu-raised flex items-center justify-center active:neu-pressed transition-colors ${
+              isDark
+                ? 'bg-[#151b28] text-slate-200 hover:text-indigo-400'
+                : 'bg-[#e8eaf0] text-slate-700 hover:text-indigo-600'
             }`}
           >
-            <div className={`w-full h-full rounded-full flex items-center justify-center ${
-              theme === 'dark' ? 'bg-[#131b2e]' : 'bg-[#3748dd]'
-            }`}>
-              <span className={`material-symbols-outlined text-[19px] ${
-                theme === 'dark' ? 'text-indigo-200' : 'text-white'
-              }`}>
-                person
-              </span>
-            </div>
+            <span className="material-symbols-outlined text-[20px]">person</span>
           </button>
         </div>
       </div>

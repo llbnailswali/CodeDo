@@ -24,15 +24,15 @@ import { ActiveLessonView } from './components/ActiveLessonView';
 import { PracticeView, DrillType } from './components/PracticeView';
 import { LeaderboardView } from './components/LeaderboardView';
 import { ProfileView } from './components/ProfileView';
-import { NavigationDrawer } from './components/NavigationDrawer';
+import { FiveStageLessonRunner } from './components/FiveStageLessonRunner';
 
 export default function App() {
   const [theme, setTheme] = useState<AppTheme>(() => StorageManager.getTheme());
   const [activeTab, setActiveTab] = useState<TabType>('learn');
   const [isLessonActive, setIsLessonActive] = useState<boolean>(false);
+  const [fiveStageLessonKey, setFiveStageLessonKey] = useState<string | null>(null);
   const [activeQuestionPool, setActiveQuestionPool] = useState<LessonQuestion[]>(LESSON_QUESTIONS);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState<number>(1); // Question 2 (Step 2 of 5: val x = 10, val y = 20)
-  const [isDrawerOpen, setIsDrawerOpen] = useState<boolean>(false);
   const [soundEnabled, setSoundEnabled] = useState<boolean>(() => StorageManager.getSoundEnabled());
 
   // User Stats loaded from storage with daily reset check
@@ -161,31 +161,46 @@ export default function App() {
       theme === 'dark' ? 'bg-[#0b0f19] text-[#dfe2f1]' : 'bg-[#f8f9fb] text-[#191c1e]'
     }`}>
         {/* Top Header */}
-        <Header
-          theme={theme}
-          activeTab={activeTab}
-          onOpenDrawer={() => setIsDrawerOpen(true)}
-          userStats={userStats}
-          onProfileClick={() => {
-            setIsLessonActive(false);
-            setActiveTab('profile');
-          }}
-          onToggleTheme={toggleTheme}
-          showBack={isLessonActive || activeTab === 'curriculum'}
-          title={isLessonActive ? 'Active Lesson' : activeTab === 'curriculum' ? 'Curriculum' : undefined}
-          onBack={() => {
-            if (isLessonActive) {
+        {!fiveStageLessonKey && (
+          <Header
+            theme={theme}
+            activeTab={activeTab}
+            userStats={userStats}
+            onProfileClick={() => {
               setIsLessonActive(false);
-            } else if (activeTab === 'curriculum') {
-              setActiveTab('learn');
-            }
-          }}
-        />
+              setFiveStageLessonKey(null);
+              setActiveTab('profile');
+            }}
+            onToggleTheme={toggleTheme}
+            showBack={isLessonActive || activeTab === 'curriculum'}
+            title={isLessonActive ? 'Active Lesson' : activeTab === 'curriculum' ? 'Curriculum' : undefined}
+            onBack={() => {
+              if (isLessonActive) {
+                setIsLessonActive(false);
+              } else if (activeTab === 'curriculum') {
+                setActiveTab('learn');
+              }
+            }}
+          />
+        )}
 
         {/* Screen Switcher */}
         <main className="flex-1 w-full flex flex-col">
-          {isLessonActive ? (
-            /* Active Challenge / Lesson View */
+          {fiveStageLessonKey ? (
+            /* 5-Stage Interactive Lesson Flow (Learn -> Explore -> Predict -> Write & Run -> Mastered) */
+            <FiveStageLessonRunner
+              theme={theme}
+              initialLessonKey={fiveStageLessonKey}
+              userStats={userStats}
+              onExit={() => setFiveStageLessonKey(null)}
+              onCompleteLesson={(earnedXP) => {
+                handleLessonComplete(earnedXP);
+                setFiveStageLessonKey(null);
+              }}
+              onToggleTheme={toggleTheme}
+            />
+          ) : isLessonActive ? (
+            /* Active Challenge / Drill View */
             <ActiveLessonView
               theme={theme}
               question={activeQuestionPool[currentQuestionIndex] || activeQuestionPool[0] || LESSON_QUESTIONS[0]}
@@ -194,33 +209,27 @@ export default function App() {
               onLessonComplete={handleLessonComplete}
             />
           ) : activeTab === 'curriculum' ? (
-            /* Curriculum Explorer View */
+            /* Curriculum Explorer View (Unrestricted dynamic core topic worlds) */
             <CurriculumExplorer
               theme={theme}
               onJumpToToday={() => setActiveTab('learn')}
+              onStartLesson={(topic) => setFiveStageLessonKey(topic || 'variables')}
             />
           ) : activeTab === 'learn' ? (
             /* Main Learning Odyssey Path */
             <LearnView
               theme={theme}
               userStats={userStats}
-              onStartLesson={handleStartLesson}
+              onStartLesson={() => setFiveStageLessonKey('variables')}
               onOpenCurriculum={() => setActiveTab('curriculum')}
               onSelectNode={(nodeTitle) => {
-                if (nodeTitle === 'Operators & Math') {
-                  setActiveQuestionPool(LessonRepository.getForLesson('operators'));
-                  setCurrentQuestionIndex(0);
-                  setIsLessonActive(true);
-                } else if (nodeTitle === 'Variables') {
-                  setActiveQuestionPool(LessonRepository.getForLesson('variables'));
-                  setCurrentQuestionIndex(0);
-                  setIsLessonActive(true);
-                } else if (nodeTitle === 'Data Types') {
-                  setActiveQuestionPool(LessonRepository.getForLesson('data-types'));
-                  setCurrentQuestionIndex(0);
-                  setIsLessonActive(true);
+                const lower = nodeTitle.toLowerCase();
+                if (lower.includes('function')) {
+                  setFiveStageLessonKey('functions');
+                } else if (lower.includes('loop')) {
+                  setFiveStageLessonKey('loops');
                 } else {
-                  handleStartLesson();
+                  setFiveStageLessonKey('variables');
                 }
               }}
             />
@@ -237,37 +246,32 @@ export default function App() {
               userStats={userStats}
             />
           ) : (
-            /* User Profile & Badges */
+            /* User Profile & Settings */
             <ProfileView
               theme={theme}
               userStats={userStats}
-              onStartLesson={handleStartLesson}
+              onStartLesson={() => setFiveStageLessonKey('variables')}
+              onOpenCurriculum={() => setActiveTab('curriculum')}
+              onToggleTheme={toggleTheme}
+              soundEnabled={soundEnabled}
+              onToggleSound={toggleSound}
+              onResetProgress={handleResetProgress}
             />
           )}
         </main>
 
-        {/* Bottom Navigation Bar (Hidden when actively in quiz) */}
-        {!isLessonActive && (
+        {/* Bottom Navigation Bar (Hidden when actively in lesson or drill) */}
+        {!isLessonActive && !fiveStageLessonKey && (
           <Navigation
             theme={theme}
             activeTab={activeTab === 'curriculum' ? 'learn' : activeTab}
             onSelectTab={(tab) => {
               setIsLessonActive(false);
+              setFiveStageLessonKey(null);
               setActiveTab(tab);
             }}
           />
         )}
-
-        {/* Navigation Drawer Menu */}
-        <NavigationDrawer
-          isOpen={isDrawerOpen}
-          onClose={() => setIsDrawerOpen(false)}
-          theme={theme}
-          onToggleTheme={toggleTheme}
-          soundEnabled={soundEnabled}
-          onToggleSound={toggleSound}
-          onResetProgress={handleResetProgress}
-        />
       </div>
   );
 }

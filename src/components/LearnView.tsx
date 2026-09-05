@@ -1,6 +1,7 @@
 import React from 'react';
 import { AppTheme, UserStats } from '../types';
 import { soundFX } from '../utils/audio';
+import { HOME_WORLDS, WorldTopicNode, WorldTopicSection } from '../data/homeWorldsData';
 
 interface LearnViewProps {
   theme: AppTheme;
@@ -17,570 +18,440 @@ export const LearnView: React.FC<LearnViewProps> = ({
   onOpenCurriculum,
   onSelectNode,
 }) => {
+  const isDark = theme === 'dark';
+
+  const handleNodeClick = (world: WorldTopicSection, node: WorldTopicNode) => {
+    soundFX.playClick();
+    if (node.status === 'active') {
+      onStartLesson();
+    } else {
+      onSelectNode?.(world.topicTitle);
+    }
+  };
+
   return (
-    <div className="flex flex-col w-full max-w-md mx-auto px-4 pb-28 pt-2 select-none">
-      {/* Today's Goal Card */}
-      <section className="w-full mt-2 mb-6">
-        <div
-          className={`w-full rounded-2xl p-4 flex flex-col gap-3 transition-all duration-300 ${
-            theme === 'dark'
-              ? 'dark-glass-card'
-              : 'bg-[#f8f9fb] neumorph-raised'
-          }`}
-        >
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <span
-                className={`w-2.5 h-2.5 rounded-full ${
-                  theme === 'dark'
-                    ? 'bg-cyan-400 shadow-[0_0_8px_rgba(34,211,238,0.8)] animate-pulse'
-                    : 'bg-[#3748dd] animate-pulse'
-                }`}
-              />
-              <span
-                className={`font-['Outfit'] text-[11px] font-bold tracking-wider uppercase ${
-                  theme === 'dark' ? 'text-[#94a3b8]' : 'text-[#454655]'
-                }`}
-              >
-                TODAY'S GOAL
-              </span>
-            </div>
+    <div
+      className={`min-h-screen w-full flex flex-col items-center select-none pb-32 pt-1 px-4 transition-colors duration-300 ${
+        isDark ? 'bg-[#0b0f19] text-[#f1f3f8]' : 'bg-[#e8eaf0] text-[#1e2433]'
+      }`}
+    >
+      <div className="w-full max-w-md flex flex-col">
+        {/* ================= 3 COMPACT STATUS PILLS (NEUMORPHIC DESIGN) ================= */}
+        <section className="w-full mb-2 pt-2 sticky top-1 z-30 backdrop-blur-md pb-1">
+          <div className="flex items-center justify-between gap-2.5">
+            {/* Streak */}
             <div
-              className={`h-6 px-2.5 rounded-full flex items-center ${
-                theme === 'dark'
-                  ? 'bg-[#0d1424] border border-[#2d3b55]'
-                  : 'bg-[#f2f4f6] neumorph-active-pill'
+              className={`flex-1 neu-pressed py-2 px-2.5 rounded-xl flex items-center justify-center gap-1.5 transition-all ${
+                isDark ? 'bg-[#0e131e] text-[#dfe2f1]' : 'bg-[#e8eaf0] text-[#2e3040]'
               }`}
             >
-              <span
-                className={`font-['JetBrains_Mono'] text-xs font-bold ${
-                  theme === 'dark' ? 'text-[#818cf8]' : 'text-[#3748dd]'
-                }`}
-              >
-                {userStats.todayLessonsCompleted} / {userStats.todayGoal} Lessons
+              <span className="text-sm leading-none">🔥</span>
+              <span className="font-mono text-xs font-semibold text-inherit">
+                {userStats.streak || 12}
+              </span>
+            </div>
+
+            {/* Journey Completion % (Progress) */}
+            <div
+              className={`flex-1 neu-pressed py-2 px-2.5 rounded-xl flex items-center justify-center gap-1.5 transition-all ${
+                isDark ? 'bg-[#0e131e] text-[#dfe2f1]' : 'bg-[#e8eaf0] text-[#2e3040]'
+              }`}
+            >
+              <span className="text-xs leading-none">📈</span>
+              <span className="font-mono text-xs font-semibold text-inherit">68%</span>
+            </div>
+
+            {/* Gems */}
+            <div
+              className={`flex-1 neu-pressed py-2 px-2.5 rounded-xl flex items-center justify-center gap-1.5 transition-all ${
+                isDark ? 'bg-[#0e131e] text-[#dfe2f1]' : 'bg-[#e8eaf0] text-[#2e3040]'
+              }`}
+            >
+              <span className="text-xs leading-none">💎</span>
+              <span className="font-mono text-xs font-semibold text-inherit">
+                {userStats.stars || 120}
               </span>
             </div>
           </div>
+        </section>
 
-          {/* Luminous / Inset Progress Bar */}
+        {/* ================= ALL WORLDS WITH TOPICS (CONTINUOUS SCROLL) ================= */}
+        <div className="w-full flex flex-col">
+          {HOME_WORLDS.map((world, worldIdx) => {
+            const isFirstWorld = world.worldNumber === 1;
+
+            return (
+              <div key={world.worldId} className="w-full flex flex-col">
+                {/* Connector from previous world */}
+                {worldIdx > 0 && (
+                  <div className="w-full flex items-center justify-center py-2">
+                    <div className="flex flex-col items-center gap-1">
+                      <div
+                        className={`w-0.5 h-6 border-l-2 border-dashed ${
+                          isDark ? 'border-slate-700' : 'border-slate-300'
+                        }`}
+                      />
+                      <span className="material-symbols-outlined text-[16px] text-slate-400">
+                        arrow_downward
+                      </span>
+                    </div>
+                  </div>
+                )}
+
+                {/* ================= TOPIC & TRACKING PROGRESS HEADER ================= */}
+                <section className="mb-2 mt-2">
+                  <div
+                    className={`rounded-2xl px-4 py-3.5 flex items-center justify-between border transition-all ${
+                      isDark
+                        ? 'bg-[#151b28] border-white/10 shadow-md'
+                        : 'bg-white border-slate-200/80 neu-raised-sm'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <span
+                        className={`w-6 h-6 rounded-lg flex items-center justify-center font-mono text-[10px] font-bold border ${
+                          world.completedCount > 0
+                            ? isDark
+                              ? 'bg-indigo-950/60 text-indigo-300 border-indigo-500/30'
+                              : 'bg-indigo-50 text-indigo-700 border-indigo-200'
+                            : isDark
+                            ? 'bg-[#0e131e] text-slate-400 border-white/5'
+                            : 'bg-slate-100 text-slate-500 border-slate-200'
+                        }`}
+                      >
+                        W{world.worldNumber}
+                      </span>
+                      <h2 className="text-base font-['Outfit'] font-bold tracking-tight text-inherit">
+                        {world.topicTitle}
+                      </h2>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <span
+                        className={`font-mono text-xs font-bold px-2.5 py-1 rounded-xl border ${
+                          world.completedCount > 0
+                            ? isDark
+                              ? 'bg-indigo-950/50 text-indigo-300 border-indigo-500/30'
+                              : 'bg-indigo-50 text-indigo-700 border-indigo-200'
+                            : isDark
+                            ? 'bg-[#0e131e] text-slate-400 border-white/5'
+                            : 'bg-slate-100 text-slate-500 border-slate-200'
+                        }`}
+                      >
+                        {world.completedCount}/{world.totalCount}
+                      </span>
+                      <span
+                        className={`font-mono text-xs font-bold px-2 py-1 rounded-xl border ${
+                          world.percentage > 0
+                            ? isDark
+                              ? 'bg-emerald-950/50 text-emerald-300 border-emerald-500/30'
+                              : 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                            : isDark
+                            ? 'bg-[#0e131e] text-slate-400 border-white/5'
+                            : 'bg-slate-100 text-slate-500 border-slate-200'
+                        }`}
+                      >
+                        {world.percentage}%
+                      </span>
+                    </div>
+                  </div>
+                </section>
+
+                {/* ================= SNAKE RIBBON LEARNING PATH FOR WORLD ================= */}
+                <section className="relative w-full pt-1 pb-4 flex flex-col items-center overflow-hidden">
+                  {/* SVG Snake Track */}
+                  <svg
+                    className="absolute top-2 inset-x-0 w-full h-[530px] pointer-events-none stroke-current"
+                    fill="none"
+                    preserveAspectRatio="none"
+                    viewBox="0 0 360 530"
+                  >
+                    <defs>
+                      <linearGradient id={`activeGrad-${world.worldId}`} x1="0%" x2="0%" y1="0%" y2="100%">
+                        <stop offset="0%" stopColor="#6366f1" />
+                        <stop offset="50%" stopColor="#818cf8" />
+                        <stop offset="100%" stopColor={isDark ? '#273349' : '#d0d2dc'} />
+                      </linearGradient>
+                    </defs>
+
+                    {/* Neumorphic highlight track */}
+                    <path
+                      d="M 80,32 C 80,75 180,75 180,120 C 180,165 280,165 280,210 C 280,255 180,255 180,300 C 180,345 80,345 80,390 C 80,435 180,435 180,480 L 180,530"
+                      opacity={isDark ? '0.15' : '0.95'}
+                      stroke="#ffffff"
+                      strokeLinecap="round"
+                      strokeWidth="12"
+                    />
+
+                    {/* Recessed base track */}
+                    <path
+                      d="M 80,32 C 80,75 180,75 180,120 C 180,165 280,165 280,210 C 280,255 180,255 180,300 C 180,345 80,345 80,390 C 80,435 180,435 180,480 L 180,530"
+                      stroke={isDark ? '#1a2233' : '#d0d2dc'}
+                      strokeLinecap="round"
+                      strokeWidth="7"
+                    />
+
+                    {/* Active completed gradient ribbon on World 1 */}
+                    {isFirstWorld && (
+                      <path
+                        d="M 80,32 C 80,75 180,75 180,120"
+                        stroke={`url(#activeGrad-${world.worldId})`}
+                        strokeDasharray="4 5"
+                        strokeLinecap="round"
+                        strokeWidth="5"
+                      />
+                    )}
+                  </svg>
+
+                  {/* NODE 0: Left */}
+                  {world.nodes[0] && (
+                    <div className="relative w-full flex items-center justify-start pl-8 pt-1 z-10">
+                      <div className="flex items-center gap-3">
+                        <button
+                          type="button"
+                          onClick={() => handleNodeClick(world, world.nodes[0])}
+                          className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-transform active:scale-95 border cursor-pointer ${
+                            world.nodes[0].status === 'completed'
+                              ? isDark
+                                ? 'bg-[#151b28] border-white/10 text-indigo-400 shadow-md'
+                                : 'bg-white border-slate-200 text-indigo-600 shadow-sm'
+                              : isDark
+                              ? 'bg-[#151b28] border-white/5 text-slate-500'
+                              : 'bg-white border-slate-200 text-slate-400'
+                          }`}
+                        >
+                          <span className="material-symbols-outlined text-[22px]">
+                            {world.nodes[0].status === 'completed' ? 'check_circle' : 'lock'}
+                          </span>
+                        </button>
+                        <div className="flex flex-col">
+                          <span className="text-xs font-['Outfit'] font-semibold">
+                            {world.nodes[0].title}
+                          </span>
+                          <span
+                            className={`text-[10px] font-semibold ${
+                              world.nodes[0].status === 'completed'
+                                ? 'text-emerald-500'
+                                : 'text-slate-400'
+                            }`}
+                          >
+                            {world.nodes[0].subtitle}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* NODE 1: Center */}
+                  {world.nodes[1] && (
+                    <div className="relative w-full flex items-center justify-center pt-8 z-20">
+                      <div className="flex flex-col items-center">
+                        {world.nodes[1].status === 'active' ? (
+                          <button
+                            type="button"
+                            onClick={() => handleNodeClick(world, world.nodes[1])}
+                            className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-indigo-600 to-indigo-500 flex items-center justify-center text-white shadow-lg shadow-indigo-500/40 pulsing-dot transition-transform active:scale-95 hover:brightness-105 cursor-pointer"
+                          >
+                            <span className="material-symbols-outlined text-[26px]">play_arrow</span>
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => handleNodeClick(world, world.nodes[1])}
+                            className={`w-11 h-11 rounded-2xl flex items-center justify-center border cursor-pointer ${
+                              isDark
+                                ? 'bg-[#151b28] border-white/5 text-slate-500'
+                                : 'bg-white border-slate-200 text-slate-400'
+                            }`}
+                          >
+                            <span className="material-symbols-outlined text-[18px]">lock</span>
+                          </button>
+                        )}
+                        <span className="text-xs font-['Outfit'] font-bold mt-2 text-inherit text-center">
+                          {world.nodes[1].title}
+                        </span>
+                        <span
+                          className={`text-[10px] font-mono ${
+                            world.nodes[1].status === 'active'
+                              ? 'text-indigo-500 font-bold'
+                              : 'text-slate-500'
+                          }`}
+                        >
+                          {world.nodes[1].subtitle}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* NODE 2: Right */}
+                  {world.nodes[2] && (
+                    <div className="relative w-full flex items-center justify-end pr-8 pt-8 z-10">
+                      <div className="flex items-center gap-3 flex-row-reverse">
+                        <button
+                          type="button"
+                          onClick={() => handleNodeClick(world, world.nodes[2])}
+                          className={`w-11 h-11 rounded-2xl flex items-center justify-center border cursor-pointer ${
+                            isDark
+                              ? 'bg-[#151b28] border-white/5 text-slate-500'
+                              : 'bg-white border-slate-200 text-slate-400'
+                          }`}
+                        >
+                          <span className="material-symbols-outlined text-[18px]">lock</span>
+                        </button>
+                        <div className="flex flex-col text-right">
+                          <span className="text-xs font-['Outfit'] font-semibold text-slate-400">
+                            {world.nodes[2].title}
+                          </span>
+                          <span className="text-[10px] text-slate-500 font-mono">
+                            {world.nodes[2].subtitle}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* NODE 3: Center */}
+                  {world.nodes[3] && (
+                    <div className="relative w-full flex items-center justify-center pt-8 z-10">
+                      <div className="flex flex-col items-center">
+                        <button
+                          type="button"
+                          onClick={() => handleNodeClick(world, world.nodes[3])}
+                          className={`w-11 h-11 rounded-2xl flex items-center justify-center border cursor-pointer ${
+                            isDark
+                              ? 'bg-[#151b28] border-white/5 text-slate-500'
+                              : 'bg-white border-slate-200 text-slate-400'
+                          }`}
+                        >
+                          <span className="material-symbols-outlined text-[18px]">lock</span>
+                        </button>
+                        <span className="text-xs font-['Outfit'] font-semibold text-slate-400 mt-1.5 text-center">
+                          {world.nodes[3].title}
+                        </span>
+                        <span className="text-[10px] text-slate-500 font-mono">
+                          {world.nodes[3].subtitle}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* NODE 4: Left */}
+                  {world.nodes[4] && (
+                    <div className="relative w-full flex items-center justify-start pl-9 pt-8 z-10">
+                      <div className="flex items-center gap-2.5">
+                        <button
+                          type="button"
+                          onClick={() => handleNodeClick(world, world.nodes[4])}
+                          className={`w-11 h-11 rounded-2xl flex items-center justify-center border cursor-pointer ${
+                            isDark
+                              ? 'bg-[#151b28] border-white/5 text-slate-500'
+                              : 'bg-white border-slate-200 text-slate-400'
+                          }`}
+                        >
+                          <span className="material-symbols-outlined text-[18px]">lock</span>
+                        </button>
+                        <div className="flex flex-col">
+                          <span className="text-xs font-['Outfit'] font-semibold text-slate-400">
+                            {world.nodes[4].title}
+                          </span>
+                          <span className="text-[10px] text-slate-500 font-mono">
+                            {world.nodes[4].subtitle}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* NODE 5: Boss Challenge Milestone (Center) */}
+                  {world.nodes[5] && (
+                    <div className="relative w-full max-w-[340px] pt-9 z-20 flex flex-col items-center">
+                      <div
+                        onClick={() => handleNodeClick(world, world.nodes[5])}
+                        className={`rounded-3xl p-4 w-full flex items-center justify-between border transition-all cursor-pointer hover:border-purple-500/40 ${
+                          isDark
+                            ? 'bg-[#151b28] border-white/10 shadow-lg'
+                            : 'bg-white border-slate-200/80 shadow-md'
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div
+                            className={`w-12 h-12 rounded-2xl flex items-center justify-center relative ${
+                              isDark ? 'bg-[#0f1420] text-purple-400' : 'bg-purple-50 text-purple-600'
+                            }`}
+                          >
+                            <span className="material-symbols-outlined text-[26px]">swords</span>
+                            <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-purple-500" />
+                          </div>
+                          <div className="flex flex-col">
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-[9px] font-mono font-bold tracking-wider uppercase text-purple-400">
+                                FINAL TRIAL
+                              </span>
+                              <span className="text-[9px] font-mono text-slate-400">
+                                • {world.nodes[5].xpReward} XP
+                              </span>
+                            </div>
+                            <h3 className="text-xs font-['Outfit'] font-bold">
+                              {world.nodes[5].bossTitle || world.nodes[5].title}
+                            </h3>
+                            <span className="text-[10px] text-slate-400">
+                              {world.nodes[5].bossSubtitle || world.nodes[5].subtitle}
+                            </span>
+                          </div>
+                        </div>
+                        <div
+                          className={`w-8 h-8 rounded-xl flex items-center justify-center border ${
+                            isDark
+                              ? 'bg-[#0f1420] border-white/5 text-slate-500'
+                              : 'bg-slate-100 text-slate-400'
+                          }`}
+                        >
+                          <span className="material-symbols-outlined text-[16px]">lock</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </section>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* ================= END OF CURRICULUM CAPSTONE CELEBRATION ================= */}
+        <section className="w-full mt-6 mb-8 flex flex-col items-center">
           <div
-            className={`w-full h-3 rounded-full overflow-hidden p-0.5 ${
-              theme === 'dark'
-                ? 'bg-[#0d1424] border border-[#202c44]'
-                : 'bg-[#eceef0] neumorph-active-pill'
+            className={`w-full max-w-[340px] rounded-3xl p-5 border flex flex-col items-center text-center transition-all ${
+              isDark
+                ? 'bg-gradient-to-b from-[#151b28] to-[#0f1420] border-indigo-500/30 shadow-xl'
+                : 'bg-gradient-to-b from-white to-slate-50 border-indigo-200 shadow-md'
             }`}
           >
-            <div
-              className={`h-full rounded-full transition-all duration-700 w-2/3 ${
-                theme === 'dark'
-                  ? 'bg-gradient-to-r from-indigo-500 via-indigo-400 to-cyan-400 shadow-[0_0_14px_rgba(99,102,241,0.8)]'
-                  : 'bg-gradient-to-r from-[#3748dd] to-[#613ed2] shadow-[0_0_12px_rgba(55,72,221,0.5)]'
-              }`}
-            />
-          </div>
-
-          <div
-            className={`flex items-center justify-between text-xs ${
-              theme === 'dark' ? 'text-[#94a3b8]' : 'text-[#454655]'
-            }`}
-          >
-            <div className="flex items-center gap-1.5">
-              <span
-                className="material-symbols-outlined text-[16px] text-amber-400 icon-filled drop-shadow-[0_0_5px_rgba(252,211,77,0.7)]"
-              >
-                hotel_class
-              </span>
-              <span
-                className={`font-['Plus_Jakarta_Sans'] font-medium ${
-                  theme === 'dark' ? 'text-[#cbd5e1]' : 'text-[#454655]'
-                }`}
-              >
-                +150 XP bonus available today
-              </span>
+            <div className="w-14 h-14 rounded-2xl bg-indigo-500/10 border border-indigo-500/30 flex items-center justify-center text-indigo-500 mb-3">
+              <span className="material-symbols-outlined text-[32px]">workspace_premium</span>
             </div>
-            <span
-              className={`font-['JetBrains_Mono'] font-bold ${
-                theme === 'dark' ? 'text-cyan-300' : 'text-[#454655]'
-              }`}
-            >
-              66%
+            <span className="text-[10px] font-mono font-bold tracking-widest uppercase text-indigo-500 mb-1">
+              CURRICULUM HORIZON REACHED
             </span>
+            <h3 className="text-base font-['Outfit'] font-bold mb-1.5">
+              10 Worlds • All Topics Unlocked
+            </h3>
+            <p className="text-xs text-slate-400 max-w-xs mb-4">
+              From basic variable mutability to advanced Jetpack Compose and production MVVM architecture.
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                soundFX.playClick();
+                onOpenCurriculum();
+              }}
+              className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-['Outfit'] font-semibold text-xs flex items-center gap-2 shadow-md shadow-indigo-500/20 active:scale-95 cursor-pointer"
+            >
+              <span className="material-symbols-outlined text-[16px]">map</span>
+              <span>Open Global Curriculum Map</span>
+            </button>
           </div>
-        </div>
-      </section>
-
-      {/* World 01 Header & Streak Floating Pill */}
-      <div className="flex items-center justify-between mb-4 px-1">
-        <div>
-          <span
-            className={`font-['Outfit'] text-[11px] font-bold tracking-widest uppercase block ${
-              theme === 'dark'
-                ? 'text-[#818cf8] drop-shadow-[0_0_8px_rgba(129,140,248,0.4)]'
-                : 'text-[#3748dd]'
-            }`}
-          >
-            LEARNING ODYSSEY
-          </span>
-          <h2 className="font-['Outfit'] text-2xl font-bold tracking-tight text-inherit">
-            Kotlin Basics
-          </h2>
-        </div>
-        <div
-          className={`h-9 px-3 rounded-full flex items-center gap-1.5 shadow-md ${
-            theme === 'dark'
-              ? 'bg-[#162036] border border-[#2A374F] shadow-black/40'
-              : 'bg-[#f8f9fb] neumorph-raised-soft'
-          }`}
-        >
-          <span
-            className="material-symbols-outlined text-[18px] text-orange-500 animate-bounce icon-filled drop-shadow-[0_0_8px_rgba(251,146,60,0.8)]"
-          >
-            local_fire_department
-          </span>
-          <span className="font-['Outfit'] text-xs font-bold text-inherit">
-            12 Days Fire
-          </span>
-        </div>
+        </section>
       </div>
-
-      {/* The Interactive Snake Path Canvas */}
-      <div className="relative w-full py-4 min-h-[960px] select-none">
-        {/* SVG Snake Guide Ribbon */}
-        <svg
-          className="absolute inset-0 w-full h-full pointer-events-none z-0"
-          fill="none"
-          preserveAspectRatio="none"
-          viewBox="0 0 380 960"
-        >
-          {/* Outer Soft Depth Track */}
-          <path
-            d="M 85 50 
-               C 85 110, 190 110, 190 170 
-               C 190 230, 295 230, 295 295 
-               C 295 365, 205 365, 205 440 
-               C 205 500, 85 500, 85 570 
-               C 85 640, 190 640, 190 705
-               C 190 770, 295 770, 295 845"
-            stroke={theme === 'dark' ? '#182338' : '#e0e3e5'}
-            strokeLinecap="round"
-            strokeWidth="14"
-          />
-
-          {/* Inner Active/Glowing River Layer */}
-          <path
-            d="M 85 50 
-               C 85 110, 190 110, 190 170 
-               C 190 230, 295 230, 295 295"
-            stroke={`url(#completedPathGlow_${theme})`}
-            strokeLinecap="round"
-            strokeWidth="6"
-          />
-
-          {/* Dashed forward line for uncompleted territory */}
-          <path
-            d="M 295 295 
-               C 295 365, 205 365, 205 440 
-               C 205 500, 85 500, 85 570 
-               C 85 640, 190 640, 190 705
-               C 190 770, 295 770, 295 845"
-            stroke={theme === 'dark' ? '#334155' : '#c5c5d8'}
-            strokeDasharray="6 8"
-            strokeLinecap="round"
-            strokeWidth="4"
-          />
-
-          <defs>
-            <linearGradient id={`completedPathGlow_${theme}`} x1="0%" x2="100%" y1="0%" y2="100%">
-              <stop offset="0%" stopColor="#10B981" />
-              <stop offset="50%" stopColor={theme === 'dark' ? '#06B6D4' : '#5B6CFF'} />
-              <stop offset="100%" stopColor={theme === 'dark' ? '#6366F1' : '#8B6CFF'} />
-            </linearGradient>
-          </defs>
-        </svg>
-
-        {/* NODE 1: COMPLETED (LEFT) */}
-        <div className="absolute left-6 top-3 flex flex-col items-center z-10 w-36">
-          <button
-            aria-label="Variables completed"
-            onClick={() => {
-              soundFX.playClick();
-              onSelectNode?.('Variables');
-            }}
-            type="button"
-            className={`w-16 h-16 rounded-full flex items-center justify-center relative active:scale-95 transition-transform ${
-              theme === 'dark'
-                ? 'dark-node-completed glow-emerald'
-                : 'bg-[#f8f9fb] neumorph-raised'
-            }`}
-          >
-            <div
-              className={`w-12 h-12 rounded-full flex items-center justify-center ${
-                theme === 'dark'
-                  ? 'bg-emerald-500/20 border border-emerald-400/40'
-                  : 'bg-emerald-500/10'
-              }`}
-            >
-              <div className="w-8 h-8 rounded-full bg-emerald-500 text-white flex items-center justify-center shadow-md">
-                <span className="material-symbols-outlined text-[20px] font-bold">check</span>
-              </div>
-            </div>
-            <div
-              className={`absolute -top-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center ${
-                theme === 'dark'
-                  ? 'bg-[#122324] border border-amber-400/60 shadow'
-                  : 'bg-[#f8f9fb] neumorph-raised-soft'
-              }`}
-            >
-              <span className="material-symbols-outlined text-[13px] text-amber-400 icon-filled">
-                star
-              </span>
-            </div>
-          </button>
-          <div className="mt-2 text-center">
-            <h4 className="font-['Outfit'] text-sm font-semibold tracking-wide text-inherit">
-              Variables
-            </h4>
-            <span className="font-['JetBrains_Mono'] text-xs text-emerald-500 block font-medium">
-              +20 XP Mastered
-            </span>
-          </div>
-        </div>
-
-        {/* NODE 2: COMPLETED (CENTER) */}
-        <div className="absolute left-1/2 -translate-x-1/2 top-32 flex flex-col items-center z-10 w-36">
-          <button
-            aria-label="Data Types completed"
-            onClick={() => {
-              soundFX.playClick();
-              onSelectNode?.('Data Types');
-            }}
-            type="button"
-            className={`w-16 h-16 rounded-full flex items-center justify-center relative active:scale-95 transition-transform ${
-              theme === 'dark'
-                ? 'dark-node-completed glow-emerald'
-                : 'bg-[#f8f9fb] neumorph-raised'
-            }`}
-          >
-            <div
-              className={`w-12 h-12 rounded-full flex items-center justify-center ${
-                theme === 'dark'
-                  ? 'bg-emerald-500/20 border border-emerald-400/40'
-                  : 'bg-emerald-500/10'
-              }`}
-            >
-              <div className="w-8 h-8 rounded-full bg-emerald-500 text-white flex items-center justify-center shadow-md">
-                <span className="material-symbols-outlined text-[20px] font-bold">check</span>
-              </div>
-            </div>
-            <div
-              className={`absolute -top-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center ${
-                theme === 'dark'
-                  ? 'bg-[#122324] border border-amber-400/60 shadow'
-                  : 'bg-[#f8f9fb] neumorph-raised-soft'
-              }`}
-            >
-              <span className="material-symbols-outlined text-[13px] text-amber-400 icon-filled">
-                star
-              </span>
-            </div>
-          </button>
-          <div className="mt-2 text-center">
-            <h4 className="font-['Outfit'] text-sm font-semibold tracking-wide text-inherit">
-              Data Types
-            </h4>
-            <span className="font-['JetBrains_Mono'] text-xs text-emerald-500 block font-medium">
-              +25 XP Mastered
-            </span>
-          </div>
-        </div>
-
-        {/* NODE 3: HERO FOCUS / CURRENT NODE (RIGHT) */}
-        <div className="absolute right-4 top-60 flex flex-col items-center z-20 w-44">
-          {/* Animated Speech/Status Pill */}
-          <div
-            className={`mb-2 px-3 py-1 rounded-full flex items-center gap-1.5 shadow-sm animate-bounce ${
-              theme === 'dark'
-                ? 'bg-[#162036] text-[#c0c1ff] border border-indigo-400/50 shadow-[0_0_14px_rgba(99,102,241,0.35)]'
-                : 'bg-[#f8f9fb] text-[#3748dd] neumorph-raised-soft'
-            }`}
-          >
-            <span className="material-symbols-outlined text-[14px] text-amber-400 icon-filled">
-              bolt
-            </span>
-            <span className="font-['Outfit'] text-[10px] font-bold tracking-wider">
-              START TODAY • 5 MIN
-            </span>
-          </div>
-
-          {/* Large Hero Touch Node */}
-          <button
-            aria-label="Start Operators and Math lesson"
-            onClick={() => {
-              soundFX.playClick();
-              onStartLesson();
-            }}
-            id="heroPlayButton"
-            type="button"
-            className={`w-20 h-20 rounded-full flex items-center justify-center text-white relative active:scale-95 transition-all ${
-              theme === 'dark'
-                ? 'bg-gradient-to-tr from-[#4338ca] via-[#6366f1] to-[#38bdf8] glow-primary border-2 border-indigo-200/50'
-                : 'bg-gradient-to-br from-[#5B6CFF] to-[#8B6CFF] shadow-[0_12px_28px_rgba(91,108,255,0.45)]'
-            }`}
-          >
-            {/* Concentric ripple halo */}
-            <span className="absolute inset-0 rounded-full bg-indigo-500/25 animate-ping pointer-events-none" />
-            <div className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm border border-white/40 flex items-center justify-center shadow-inner">
-              <span className="material-symbols-outlined text-[32px] text-white ml-1 icon-filled">
-                play_arrow
-              </span>
-            </div>
-          </button>
-
-          <div className="mt-2 text-center flex flex-col items-center">
-            <h4 className="font-['Outfit'] text-base font-bold tracking-tight text-inherit">
-              Operators &amp; Math
-            </h4>
-            <div
-              className={`mt-1 px-2.5 py-0.5 rounded-full font-['Outfit'] text-[10px] font-bold tracking-wider ${
-                theme === 'dark'
-                  ? 'bg-indigo-500/20 border border-indigo-400/40 text-cyan-300 shadow-[0_0_8px_rgba(56,189,248,0.3)]'
-                  : 'bg-[#3748dd]/10 text-[#3748dd]'
-              }`}
-            >
-              AVAILABLE NOW
-            </div>
-          </div>
-        </div>
-
-        {/* NODE 4: MYSTERY TREASURE CHEST (CENTER-RIGHT) */}
-        <div className="absolute left-1/2 -translate-x-4 top-[395px] flex flex-col items-center z-10 w-44">
-          <button
-            aria-label="Locked mystery chest"
-            onClick={() => {
-              soundFX.playClick();
-              alert('Mystery chest unlocks after completing Lesson 3: Operators & Math!');
-            }}
-            type="button"
-            className={`w-16 h-16 rounded-full flex items-center justify-center relative active:scale-95 transition-transform ${
-              theme === 'dark'
-                ? 'dark-node-locked'
-                : 'bg-[#f8f9fb] neumorph-raised'
-            }`}
-          >
-            <div
-              className={`w-11 h-11 rounded-full flex items-center justify-center ${
-                theme === 'dark'
-                  ? 'bg-amber-500/15 border border-amber-400/30'
-                  : 'bg-amber-100 neumorph-active-pill'
-              }`}
-            >
-              <span className="material-symbols-outlined text-[24px] text-amber-500 icon-filled">
-                inventory_2
-              </span>
-            </div>
-            <div
-              className={`absolute -bottom-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center ${
-                theme === 'dark'
-                  ? 'bg-[#101625] border border-[#2d3b55]'
-                  : 'bg-[#f8f9fb] neumorph-raised-soft'
-              }`}
-            >
-              <span className="material-symbols-outlined text-[12px] text-slate-400">
-                lock
-              </span>
-            </div>
-          </button>
-          <div className="mt-2 text-center px-2">
-            <h4 className="font-['Outfit'] text-sm font-semibold text-inherit">
-              Bonus Chest
-            </h4>
-            <span className="font-['JetBrains_Mono'] text-xs text-slate-400 block">
-              Unlocks after Lesson 3
-            </span>
-          </div>
-        </div>
-
-        {/* NODE 5: LOCKED NODE (LEFT) */}
-        <div className="absolute left-6 top-[520px] flex flex-col items-center z-10 w-36 opacity-85">
-          <div
-            className={`w-16 h-16 rounded-full flex items-center justify-center relative ${
-              theme === 'dark'
-                ? 'dark-node-locked'
-                : 'bg-[#f8f9fb] neumorph-raised'
-            }`}
-          >
-            <div
-              className={`w-11 h-11 rounded-full flex items-center justify-center ${
-                theme === 'dark' ? 'bg-[#131a2c] border border-[#25324d]' : 'bg-[#eceef0]'
-              }`}
-            >
-              <span className="material-symbols-outlined text-[22px] text-slate-400">
-                lock
-              </span>
-            </div>
-          </div>
-          <div className="mt-2 text-center">
-            <h4 className="font-['Outfit'] text-sm font-medium text-inherit">
-              String Templates
-            </h4>
-            <span className="font-['JetBrains_Mono'] text-xs text-slate-400 block">
-              +30 XP
-            </span>
-          </div>
-        </div>
-
-        {/* MILESTONE WORLD 01 GATEWAY */}
-        <div className="absolute left-4 right-4 top-[640px] z-10">
-          <div
-            className={`w-full rounded-2xl p-3.5 flex items-center justify-between shadow-md ${
-              theme === 'dark'
-                ? 'dark-glass-card'
-                : 'bg-[#f8f9fb] neumorph-raised'
-            }`}
-          >
-            <div className="flex items-center gap-3">
-              <div
-                className={`w-11 h-11 rounded-xl flex items-center justify-center shadow-sm ${
-                  theme === 'dark'
-                    ? 'bg-gradient-to-br from-indigo-500/20 to-purple-500/20 border border-indigo-400/30 text-indigo-300'
-                    : 'bg-[#dfe0ff] text-[#000965] neumorph-raised-soft'
-                }`}
-              >
-                <span className="material-symbols-outlined text-[24px]">workspace_premium</span>
-              </div>
-              <div>
-                <span
-                  className={`font-['Outfit'] text-[10px] font-bold tracking-widest block uppercase ${
-                    theme === 'dark' ? 'text-[#818cf8]' : 'text-[#3748dd]'
-                  }`}
-                >
-                  MILESTONE GATE
-                </span>
-                <h4 className="font-['Outfit'] text-base font-bold text-inherit">
-                  Kotlin Foundations
-                </h4>
-              </div>
-            </div>
-            <div
-              className={`h-7 px-3 rounded-full flex items-center ${
-                theme === 'dark'
-                  ? 'bg-[#0d1424] border border-[#2a374f]'
-                  : 'bg-[#eceef0] neumorph-active-pill'
-              }`}
-            >
-              <span className="font-['JetBrains_Mono'] text-xs font-bold text-inherit">
-                2 / 4 Completed
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {/* NODE 6: LOCKED GATEWAY NODE (CENTER) */}
-        <div className="absolute left-1/2 -translate-x-1/2 top-[740px] flex flex-col items-center z-10 w-40 opacity-80">
-          <div
-            className={`w-16 h-16 rounded-full flex items-center justify-center ${
-              theme === 'dark' ? 'dark-node-locked' : 'bg-[#f8f9fb] neumorph-raised'
-            }`}
-          >
-            <div
-              className={`w-11 h-11 rounded-full flex items-center justify-center ${
-                theme === 'dark' ? 'bg-[#131a2c] border border-[#25324d]' : 'bg-[#eceef0]'
-              }`}
-            >
-              <span className="material-symbols-outlined text-[22px] text-slate-400">
-                lock
-              </span>
-            </div>
-          </div>
-          <div className="mt-2 text-center">
-            <h4 className="font-['Outfit'] text-sm font-medium text-inherit">
-              Conditionals
-            </h4>
-            <span className="font-['JetBrains_Mono'] text-xs text-slate-400 block">
-              Boss Level
-            </span>
-          </div>
-        </div>
-
-        {/* NODE 7: LOCKED NODE 2 (RIGHT) */}
-        <div className="absolute right-6 top-[860px] flex flex-col items-center z-10 w-40 opacity-80">
-          <div
-            className={`w-16 h-16 rounded-full flex items-center justify-center ${
-              theme === 'dark' ? 'dark-node-locked' : 'bg-[#f8f9fb] neumorph-raised'
-            }`}
-          >
-            <div
-              className={`w-11 h-11 rounded-full flex items-center justify-center ${
-                theme === 'dark' ? 'bg-[#131a2c] border border-[#25324d]' : 'bg-[#eceef0]'
-              }`}
-            >
-              <span className="material-symbols-outlined text-[22px] text-slate-400">
-                lock
-              </span>
-            </div>
-          </div>
-          <div className="mt-2 text-center">
-            <h4 className="font-['Outfit'] text-sm font-medium text-inherit">
-              Boolean Logic
-            </h4>
-            <span className="font-['JetBrains_Mono'] text-xs text-slate-400 block">
-              +35 XP
-            </span>
-          </div>
-        </div>
-      </div>
-
-      {/* WORLD 02 TRANSITION HEADER / BANNER */}
-      <section className="w-full mt-10 px-1">
-        <div
-          className={`w-full rounded-2xl p-5 flex flex-col items-center text-center relative overflow-hidden transition-all shadow-md ${
-            theme === 'dark'
-              ? 'dark-glass-card'
-              : 'bg-[#f2f4f6] neumorph-raised-soft'
-          }`}
-        >
-          <div
-            className={`w-12 h-12 rounded-2xl flex items-center justify-center mb-2 ${
-              theme === 'dark'
-                ? 'bg-cyan-500/10 border border-cyan-400/30 text-cyan-300 shadow-[0_0_16px_rgba(6,182,212,0.25)]'
-                : 'bg-[#613ed2]/10 text-[#613ed2]'
-            }`}
-          >
-            <span className="material-symbols-outlined text-[26px]">psychology</span>
-          </div>
-          <span
-            className={`font-['Outfit'] text-xs font-bold tracking-widest uppercase ${
-              theme === 'dark' ? 'text-cyan-300' : 'text-[#613ed2]'
-            }`}
-          >
-            World 02 Preview
-          </span>
-          <h3 className="font-['Outfit'] text-xl font-bold mt-1 tracking-tight text-inherit">
-            Logic &amp; Control Flow
-          </h3>
-          <p
-            className={`font-['Outfit'] text-xs max-w-xs mt-1.5 leading-relaxed ${
-              theme === 'dark' ? 'text-[#94a3b8]' : 'text-[#454655]'
-            }`}
-          >
-            Master loops, when expressions, and higher-order smart conditions.
-          </p>
-          <button
-            onClick={() => {
-              soundFX.playClick();
-              onOpenCurriculum();
-            }}
-            className={`mt-4 flex items-center gap-1.5 px-4 py-2 rounded-full font-['Outfit'] text-[12px] font-bold transition-all active:scale-95 ${
-              theme === 'dark'
-                ? 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-[0_0_15px_rgba(99,102,241,0.4)]'
-                : 'bg-[#3748dd] hover:bg-[#2e3fc7] text-white shadow-md'
-            }`}
-          >
-            <span>Explore Upcoming Worlds</span>
-            <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
-          </button>
-        </div>
-      </section>
     </div>
   );
 };

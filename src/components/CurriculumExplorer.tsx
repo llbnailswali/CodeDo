@@ -1,656 +1,498 @@
-import React from 'react';
-import { AppTheme } from '../types';
+import React, { useState } from 'react';
+import { AppTheme, WorldMeta } from '../types';
+import { WORLDS_CATALOG } from '../data/curriculumData';
 import { soundFX } from '../utils/audio';
 
 interface CurriculumExplorerProps {
   theme: AppTheme;
   onJumpToToday: () => void;
+  onStartLesson?: (topic?: string) => void;
 }
 
 export const CurriculumExplorer: React.FC<CurriculumExplorerProps> = ({
   theme,
   onJumpToToday,
+  onStartLesson,
 }) => {
+  // Selected active world in the curriculum journey
+  const [selectedWorldId, setSelectedWorldId] = useState<string>('world-1'); // Default to World 1 (Kotlin Foundations: Variables & Immutability)
+  const [viewMode, setViewMode] = useState<'focused' | 'all'>('focused');
+
+  const isDark = theme === 'dark';
+  const selectedWorld: WorldMeta =
+    WORLDS_CATALOG.find((w) => w.id === selectedWorldId) || WORLDS_CATALOG[0];
+
+  const handleWorldSelect = (worldId: string) => {
+    soundFX.playClick();
+    setSelectedWorldId(worldId);
+  };
+
+  const handleLaunchLesson = (lessonTitle: string) => {
+    soundFX.playClick();
+    if (onStartLesson) {
+      const lower = lessonTitle.toLowerCase();
+      if (lower.includes('loop') || lower.includes('for') || lower.includes('while')) {
+        onStartLesson('loops');
+      } else if (lower.includes('function') || lower.includes('scope') || lower.includes('parameter')) {
+        onStartLesson('functions');
+      } else {
+        onStartLesson('variables');
+      }
+    } else {
+      onJumpToToday();
+    }
+  };
+
   return (
-    <div className="flex flex-col w-full max-w-md mx-auto space-y-6 pb-28 pt-2 px-4 select-none">
-      {/* Sticky Explorer Anchor Bar */}
-      <div
-        className={`sticky top-2 z-30 flex items-center justify-between gap-2 px-4 py-2 rounded-full backdrop-blur-md shadow-md ${
-          theme === 'dark'
-            ? 'bg-[#131b2e]/95 border border-white/10 shadow-[0_8px_20px_rgba(0,0,0,0.5)]'
-            : 'bg-[#f8f9fb]/90 neumorph-raised-soft'
-        }`}
-      >
-        <div className="flex items-center gap-2 min-w-0">
-          <span className="relative flex h-2 w-2">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-500 opacity-75" />
-            <span className="relative inline-flex rounded-full h-2 w-2 bg-indigo-500" />
-          </span>
-          <span className="font-['Outfit'] text-[11px] font-bold uppercase tracking-wider text-slate-400 truncate">
-            Curriculum Explorer • Future Realms
-          </span>
-        </div>
-        <button
-          type="button"
-          onClick={() => {
-            soundFX.playClick();
-            onJumpToToday();
-          }}
-          className={`shrink-0 flex items-center gap-1 h-8 px-3 rounded-full text-white font-['Outfit'] text-xs font-semibold shadow-sm active:scale-95 transition-all ${
-            theme === 'dark'
-              ? 'bg-indigo-600 hover:bg-indigo-500 shadow-[0_0_12px_rgba(99,102,241,0.5)] border border-indigo-400/30'
-              : 'bg-[#3748dd] hover:bg-[#2f3dbf]'
-          }`}
-        >
-          <span>Jump to Today</span>
-          <span className="material-symbols-outlined text-[15px]">bolt</span>
-        </button>
-      </div>
-
-      {/* Realm Progression Transition Bar */}
-      <div
-        className={`flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-xs ${
-          theme === 'dark'
-            ? 'bg-[#131b2e]/80 border border-white/5 text-slate-300'
-            : 'bg-[#f2f4f6] text-[#454655]'
-        }`}
-      >
-        <span className="material-symbols-outlined text-[18px] text-indigo-400">lock_clock</span>
-        <span className="font-['Plus_Jakarta_Sans']">You are viewing upcoming worlds</span>
-        <span
-          className={`font-['JetBrains_Mono'] text-[11px] px-2 py-0.5 rounded-full font-semibold ${
-            theme === 'dark'
-              ? 'bg-indigo-950/80 border border-indigo-700/50 text-indigo-300'
-              : 'bg-white text-[#3748dd] shadow-sm'
-          }`}
-        >
-          3 LOCKED
-        </span>
-      </div>
-
-      {/* ================= WORLD 02 ================= */}
-      <section className="flex flex-col space-y-4">
-        {/* World 02 Header Banner */}
+    <div
+      className={`min-h-screen w-full flex flex-col items-center select-none pb-28 pt-2 px-4 transition-colors duration-300 ${
+        isDark ? 'bg-[#0b0f19] text-[#e2e8f0]' : 'bg-[#f1f4f9] text-[#1e2433]'
+      }`}
+    >
+      <div className="w-full max-w-md flex flex-col">
+        {/* ================= STICKY TOP CONTROLS BAR ================= */}
         <div
-          className={`relative overflow-hidden rounded-2xl p-5 ${
-            theme === 'dark'
-              ? 'dark-glass-card'
-              : 'bg-white neumorph-raised'
+          className={`sticky top-2 z-30 flex items-center justify-between gap-2 px-4 py-2.5 rounded-2xl mb-4 border backdrop-blur-md transition-all ${
+            isDark
+              ? 'bg-[#151b28]/95 border-white/10 shadow-lg'
+              : 'bg-white/95 border-slate-200/80 shadow-sm'
           }`}
         >
-          <div className="absolute -right-8 -top-8 w-32 h-32 rounded-full bg-cyan-500/10 blur-2xl pointer-events-none" />
-          <div className="relative z-10 flex flex-col space-y-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <span
-                  className={`font-['Outfit'] text-[11px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider ${
-                    theme === 'dark'
-                      ? 'bg-cyan-950/80 border border-cyan-500/30 text-cyan-300'
-                      : 'bg-[#e7deff] text-[#1e0060]'
-                  }`}
-                >
-                  World 02
-                </span>
-                <span className="font-['JetBrains_Mono'] text-xs text-slate-400 font-medium">
-                  Stage 2 of 8
-                </span>
-              </div>
-              <div
-                className={`w-9 h-9 rounded-full flex items-center justify-center ${
-                  theme === 'dark'
-                    ? 'bg-[#1c2742] border border-cyan-500/30 text-cyan-300 shadow-[0_0_10px_rgba(76,215,246,0.25)]'
-                    : 'bg-[#f8f9fb] text-[#613ed2] neumorph-raised-soft'
-                }`}
-              >
-                <span className="material-symbols-outlined text-[20px]">psychology</span>
-              </div>
-            </div>
-
-            <div>
-              <h2 className="font-['Outfit'] text-2xl font-bold tracking-tight text-inherit">
-                Logic &amp; Decision Making
-              </h2>
-              <p
-                className={`font-['Outfit'] text-sm mt-1 leading-relaxed ${
-                  theme === 'dark' ? 'text-slate-400' : 'text-[#454655]'
-                }`}
-              >
-                Master branching, boolean mechanics, and Kotlin's reactive syntax flow.
-              </p>
-            </div>
-
-            {/* Lock Pre-requisite Meter */}
-            <div
-              className={`p-3 rounded-xl space-y-1.5 ${
-                theme === 'dark' ? 'bg-[#0e1524] border border-white/5' : 'bg-[#f2f4f6]'
-              }`}
-            >
-              <div className="flex items-center justify-between text-xs">
-                <span className="flex items-center gap-1.5 text-slate-400">
-                  <span className="material-symbols-outlined text-[16px] text-amber-500">hourglass_top</span>
-                  Requires Kotlin Foundations
-                </span>
-                <span className="font-['JetBrains_Mono'] font-bold text-inherit">
-                  11 / 14 Cleared
-                </span>
-              </div>
-              <div
-                className={`w-full h-2 rounded-full overflow-hidden ${
-                  theme === 'dark' ? 'bg-slate-800' : 'bg-[#e0e3e5]'
-                }`}
-              >
-                <div
-                  className={`h-full rounded-full ${
-                    theme === 'dark'
-                      ? 'bg-gradient-to-r from-cyan-500 to-indigo-500 shadow-[0_0_8px_rgba(6,182,212,0.6)]'
-                      : 'bg-[#7a5aed]'
-                  }`}
-                  style={{ width: '78%' }}
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Winding Path: World 2 Nodes */}
-        <div className="relative py-4 flex flex-col items-center">
-          <svg
-            className="absolute inset-0 w-full h-full pointer-events-none"
-            fill="none"
-            preserveAspectRatio="none"
-            viewBox="0 0 320 440"
-          >
-            <path
-              d="M 160 20 C 230 60, 230 110, 160 150 C 90 190, 90 240, 160 280 C 220 320, 200 370, 160 410"
-              stroke={theme === 'dark' ? '#25324d' : '#c5c5d8'}
-              strokeDasharray="7 7"
-              strokeLinecap="round"
-              strokeWidth="5"
-            />
-          </svg>
-
-          {/* Node 1: if / else (Right lean) */}
-          <div className="relative z-10 flex flex-col items-center translate-x-12 mb-6 group">
-            <div
-              className={`relative w-16 h-16 rounded-full flex items-center justify-center cursor-pointer transition-transform active:scale-95 ${
-                theme === 'dark' ? 'node-orb-locked' : 'bg-[#f8f9fb] neumorph-raised'
-              }`}
-            >
-              <div
-                className={`w-11 h-11 rounded-full flex items-center justify-center ${
-                  theme === 'dark' ? 'node-orb-inner text-slate-300' : 'bg-[#eceef0] text-slate-500'
-                }`}
-              >
-                <span className="material-symbols-outlined text-[22px]">lock</span>
-              </div>
-              <div
-                className={`absolute -top-1 -right-2 px-2 py-0.5 rounded-full font-['JetBrains_Mono'] text-[11px] font-semibold shadow-sm ${
-                  theme === 'dark'
-                    ? 'bg-cyan-600 text-white border border-cyan-400/30'
-                    : 'bg-[#613ed2] text-white'
-                }`}
-              >
-                +30 XP
-              </div>
-            </div>
-            <div
-              className={`mt-2 px-3 py-1.5 rounded-xl text-center shadow-sm ${
-                theme === 'dark'
-                  ? 'bg-[#131b2e]/90 border border-white/10 text-white'
-                  : 'bg-[#f2f4f6] text-[#191c1e]'
-              }`}
-            >
-              <p className="font-['Outfit'] text-[15px] font-semibold text-center">
-                if / else Branching
-              </p>
-              <span className="font-['Outfit'] text-[12px] text-slate-400">
-                Control flow gates
-              </span>
-            </div>
-          </div>
-
-          {/* Node 2: when Expressions (Left lean) */}
-          <div className="relative z-10 flex flex-col items-center -translate-x-12 mb-6 group">
-            <div
-              className={`relative w-16 h-16 rounded-full flex items-center justify-center cursor-pointer transition-transform active:scale-95 ${
-                theme === 'dark' ? 'node-orb-locked' : 'bg-[#f8f9fb] neumorph-raised'
-              }`}
-            >
-              <div
-                className={`w-11 h-11 rounded-full flex items-center justify-center ${
-                  theme === 'dark' ? 'node-orb-inner text-cyan-400' : 'bg-[#e6e8ea] text-[#613ed2]'
-                }`}
-              >
-                <span className="material-symbols-outlined text-[22px]">tune</span>
-              </div>
-              <div
-                className={`absolute -top-1 -right-2 px-2 py-0.5 rounded-full font-['JetBrains_Mono'] text-[11px] font-semibold shadow-sm ${
-                  theme === 'dark'
-                    ? 'bg-indigo-600 text-white border border-indigo-400/30'
-                    : 'bg-[#3748dd] text-white'
-                }`}
-              >
-                +35 XP
-              </div>
-            </div>
-            <div
-              className={`mt-2 px-3 py-1.5 rounded-xl text-center shadow-sm ${
-                theme === 'dark'
-                  ? 'bg-[#131b2e]/90 border border-white/10 text-white'
-                  : 'bg-[#f2f4f6] text-[#191c1e]'
-              }`}
-            >
-              <p className="font-['Outfit'] text-[15px] font-semibold text-center">
-                when Expressions
-              </p>
-              <span className="font-['Outfit'] text-[12px] text-slate-400">
-                Kotlin power switch
-              </span>
-            </div>
-          </div>
-
-          {/* Node 3: Logical Operators (Right-center lean) */}
-          <div className="relative z-10 flex flex-col items-center translate-x-8 mb-6 group">
-            <div
-              className={`relative w-16 h-16 rounded-full flex items-center justify-center cursor-pointer transition-transform active:scale-95 ${
-                theme === 'dark' ? 'node-orb-locked' : 'bg-[#f8f9fb] neumorph-raised'
-              }`}
-            >
-              <div
-                className={`w-11 h-11 rounded-full flex items-center justify-center ${
-                  theme === 'dark' ? 'node-orb-inner text-slate-300' : 'bg-[#eceef0] text-slate-500'
-                }`}
-              >
-                <span className="material-symbols-outlined text-[22px]">lock</span>
-              </div>
-              <div
-                className={`absolute -top-1 -right-2 px-2 py-0.5 rounded-full font-['JetBrains_Mono'] text-[11px] font-semibold shadow-sm ${
-                  theme === 'dark'
-                    ? 'bg-cyan-600 text-white border border-cyan-400/30'
-                    : 'bg-[#613ed2] text-white'
-                }`}
-              >
-                +40 XP
-              </div>
-            </div>
-            <div
-              className={`mt-2 px-3 py-1.5 rounded-xl text-center shadow-sm ${
-                theme === 'dark'
-                  ? 'bg-[#131b2e]/90 border border-white/10 text-white'
-                  : 'bg-[#f2f4f6] text-[#191c1e]'
-              }`}
-            >
-              <p className="font-['Outfit'] text-[15px] font-semibold text-center">
-                &amp;&amp; || ! Operators
-              </p>
-              <span className="font-['Outfit'] text-[12px] text-slate-400">
-                Complex predicates
-              </span>
-            </div>
-          </div>
-
-          {/* World 02 Boss Shield Milestone */}
-          <div className="relative z-10 flex flex-col items-center">
-            <div
-              className={`relative w-20 h-20 rounded-2xl rotate-45 flex items-center justify-center cursor-pointer active:scale-95 transition-transform ${
-                theme === 'dark' ? 'boss-orb-glow' : 'bg-[#f8f9fb] neumorph-raised'
-              }`}
-            >
-              <div
-                className={`w-16 h-16 rounded-xl flex items-center justify-center -rotate-45 ${
-                  theme === 'dark' ? 'bg-[#1a1408] border border-amber-500/20' : 'bg-[#e0e3e5]'
-                }`}
-              >
-                <span className="material-symbols-outlined text-[32px] text-amber-500">
-                  shield
-                </span>
-              </div>
-              <div className="absolute -bottom-2 -right-2 -rotate-45 px-2 py-0.5 rounded-full bg-amber-500 text-slate-950 font-['JetBrains_Mono'] text-[11px] font-bold shadow-md">
-                BOSS
-              </div>
-            </div>
-            <div
-              className={`mt-4 px-4 py-2 rounded-xl text-center shadow-sm ${
-                theme === 'dark'
-                  ? 'bg-[#131b2e]/90 border border-amber-500/30'
-                  : 'bg-[#f2f4f6]'
-              }`}
-            >
-              <p className="font-['Outfit'] text-lg font-bold text-amber-500">
-                World 2 Boss Trial
-              </p>
-              <span className="font-['Outfit'] text-xs text-slate-400">
-                Boolean Circuit Engine Challenge
-              </span>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Divider Ribbon */}
-      <div className="flex items-center justify-center gap-3 py-2">
-        <div className={`h-px w-14 ${theme === 'dark' ? 'bg-slate-800' : 'bg-[#e0e3e5]'}`} />
-        <span className="material-symbols-outlined text-slate-500 text-[20px]">
-          keyboard_double_arrow_down
-        </span>
-        <div className={`h-px w-14 ${theme === 'dark' ? 'bg-slate-800' : 'bg-[#e0e3e5]'}`} />
-      </div>
-
-      {/* ================= WORLD 03 ================= */}
-      <section className="flex flex-col space-y-4">
-        {/* World 03 Header Banner */}
-        <div
-          className={`relative overflow-hidden rounded-2xl p-5 ${
-            theme === 'dark'
-              ? 'dark-glass-card'
-              : 'bg-white neumorph-raised'
-          }`}
-        >
-          <div className="absolute -right-8 -top-8 w-32 h-32 rounded-full bg-indigo-500/15 blur-2xl pointer-events-none" />
-          <div className="relative z-10 flex flex-col space-y-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <span
-                  className={`font-['Outfit'] text-[11px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider ${
-                    theme === 'dark'
-                      ? 'bg-indigo-950/80 border border-indigo-500/30 text-indigo-300'
-                      : 'bg-[#dfe0ff] text-[#000965]'
-                  }`}
-                >
-                  World 03
-                </span>
-                <span className="font-['JetBrains_Mono'] text-xs text-slate-400 font-medium">
-                  Stage 3 of 8
-                </span>
-              </div>
-              <div
-                className={`w-9 h-9 rounded-full flex items-center justify-center ${
-                  theme === 'dark'
-                    ? 'bg-[#1c2742] border border-indigo-500/30 text-indigo-300 shadow-[0_0_10px_rgba(99,102,241,0.25)]'
-                    : 'bg-[#f8f9fb] text-[#3748dd] neumorph-raised-soft'
-                }`}
-              >
-                <span className="material-symbols-outlined text-[20px]">all_inclusive</span>
-              </div>
-            </div>
-
-            <div>
-              <h2 className="font-['Outfit'] text-2xl font-bold tracking-tight text-inherit">
-                Loops &amp; Iteration
-              </h2>
-              <p
-                className={`font-['Outfit'] text-sm mt-1 leading-relaxed ${
-                  theme === 'dark' ? 'text-slate-400' : 'text-[#454655]'
-                }`}
-              >
-                Master for-loops, ranges (1..100), and recursion patterns.
-              </p>
-            </div>
-
-            {/* Visual Code Teaser Pill */}
-            <div
-              className={`flex items-center gap-2 p-2.5 rounded-xl font-['JetBrains_Mono'] text-xs ${
-                theme === 'dark' ? 'bg-[#0e1524] border border-white/5 text-slate-300' : 'bg-[#eceef0] text-slate-700'
-              }`}
-            >
-              <span className={theme === 'dark' ? 'text-indigo-400 font-semibold' : 'text-[#3748dd] font-semibold'}>
-                for
-              </span>
-              <span>(i in 1..100) {'{ iterate() }'}</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Winding Path: World 3 Nodes */}
-        <div className="relative py-4 flex flex-col items-center">
-          <svg
-            className="absolute inset-0 w-full h-full pointer-events-none"
-            fill="none"
-            preserveAspectRatio="none"
-            viewBox="0 0 320 340"
-          >
-            <path
-              d="M 160 20 C 80 60, 80 120, 160 160 C 240 200, 240 260, 160 300"
-              stroke={theme === 'dark' ? '#25324d' : '#c5c5d8'}
-              strokeDasharray="7 7"
-              strokeLinecap="round"
-              strokeWidth="5"
-            />
-          </svg>
-
-          {/* Node 1: for Loops & Ranges (Left lean) */}
-          <div className="relative z-10 flex flex-col items-center -translate-x-14 mb-6 group">
-            <div
-              className={`relative w-16 h-16 rounded-full flex items-center justify-center cursor-pointer transition-transform active:scale-95 ${
-                theme === 'dark' ? 'node-orb-locked' : 'bg-[#f8f9fb] neumorph-raised'
-              }`}
-            >
-              <div
-                className={`w-11 h-11 rounded-full flex items-center justify-center ${
-                  theme === 'dark' ? 'node-orb-inner text-slate-300' : 'bg-[#eceef0] text-slate-500'
-                }`}
-              >
-                <span className="material-symbols-outlined text-[22px]">lock</span>
-              </div>
-              <div
-                className={`absolute -top-1 -right-2 px-2 py-0.5 rounded-full font-['JetBrains_Mono'] text-[11px] font-semibold shadow-sm ${
-                  theme === 'dark'
-                    ? 'bg-[#1c2742] border border-white/10 text-slate-300'
-                    : 'bg-[#e0e3e5] text-slate-700'
-                }`}
-              >
-                🔒 +45 XP
-              </div>
-            </div>
-            <div
-              className={`mt-2 px-3 py-1.5 rounded-xl text-center shadow-sm ${
-                theme === 'dark'
-                  ? 'bg-[#131b2e]/90 border border-white/10 text-white'
-                  : 'bg-[#f2f4f6] text-[#191c1e]'
-              }`}
-            >
-              <p className="font-['Outfit'] text-[15px] font-semibold text-center">
-                for Loops &amp; Ranges
-              </p>
-              <span className="font-['Outfit'] text-[12px] text-slate-400">
-                Range stepping &amp; indices
-              </span>
-            </div>
-          </div>
-
-          {/* Node 2: while & do-while (Center-Right lean) */}
-          <div className="relative z-10 flex flex-col items-center translate-x-12 mb-6 group">
-            <div
-              className={`relative w-16 h-16 rounded-full flex items-center justify-center cursor-pointer transition-transform active:scale-95 ${
-                theme === 'dark' ? 'node-orb-locked' : 'bg-[#f8f9fb] neumorph-raised'
-              }`}
-            >
-              <div
-                className={`w-11 h-11 rounded-full flex items-center justify-center ${
-                  theme === 'dark' ? 'node-orb-inner text-slate-300' : 'bg-[#eceef0] text-slate-500'
-                }`}
-              >
-                <span className="material-symbols-outlined text-[22px]">lock</span>
-              </div>
-              <div
-                className={`absolute -top-1 -right-2 px-2 py-0.5 rounded-full font-['JetBrains_Mono'] text-[11px] font-semibold shadow-sm ${
-                  theme === 'dark'
-                    ? 'bg-[#1c2742] border border-white/10 text-slate-300'
-                    : 'bg-[#e0e3e5] text-slate-700'
-                }`}
-              >
-                🔒 +45 XP
-              </div>
-            </div>
-            <div
-              className={`mt-2 px-3 py-1.5 rounded-xl text-center shadow-sm ${
-                theme === 'dark'
-                  ? 'bg-[#131b2e]/90 border border-white/10 text-white'
-                  : 'bg-[#f2f4f6] text-[#191c1e]'
-              }`}
-            >
-              <p className="font-['Outfit'] text-[15px] font-semibold text-center">
-                while &amp; do-while
-              </p>
-              <span className="font-['Outfit'] text-[12px] text-slate-400">
-                Guarded loop iterations
-              </span>
-            </div>
-          </div>
-
-          {/* Node 3: Break & Continue (Center lean) */}
-          <div className="relative z-10 flex flex-col items-center mb-4 group">
-            <div
-              className={`relative w-16 h-16 rounded-full flex items-center justify-center cursor-pointer transition-transform active:scale-95 ${
-                theme === 'dark' ? 'node-orb-locked' : 'bg-[#f8f9fb] neumorph-raised'
-              }`}
-            >
-              <div
-                className={`w-11 h-11 rounded-full flex items-center justify-center ${
-                  theme === 'dark' ? 'node-orb-inner text-slate-300' : 'bg-[#eceef0] text-slate-500'
-                }`}
-              >
-                <span className="material-symbols-outlined text-[22px]">lock</span>
-              </div>
-              <div
-                className={`absolute -top-1 -right-2 px-2 py-0.5 rounded-full font-['JetBrains_Mono'] text-[11px] font-semibold shadow-sm ${
-                  theme === 'dark'
-                    ? 'bg-[#1c2742] border border-white/10 text-slate-300'
-                    : 'bg-[#e0e3e5] text-slate-700'
-                }`}
-              >
-                🔒 +50 XP
-              </div>
-            </div>
-            <div
-              className={`mt-2 px-3 py-1.5 rounded-xl text-center shadow-sm ${
-                theme === 'dark'
-                  ? 'bg-[#131b2e]/90 border border-white/10 text-white'
-                  : 'bg-[#f2f4f6] text-[#191c1e]'
-              }`}
-            >
-              <p className="font-['Outfit'] text-[15px] font-semibold text-center">
-                Break &amp; Continue
-              </p>
-              <span className="font-['Outfit'] text-[12px] text-slate-400">
-                Labeled jump statements
-              </span>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ================= WORLD 04 TEASER ================= */}
-      <section className="flex flex-col space-y-2">
-        <div
-          className={`p-5 rounded-2xl flex flex-col space-y-3 ${
-            theme === 'dark'
-              ? 'dark-glass-card'
-              : 'bg-[#f2f4f6] border border-[#c5c5d8]/30 shadow-sm'
-          }`}
-        >
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="relative flex h-2.5 w-2.5">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-500 opacity-75" />
+              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-indigo-500" />
+            </span>
+            <div className="flex flex-col min-w-0">
               <span
-                className={`w-7 h-7 rounded-full flex items-center justify-center ${
-                  theme === 'dark'
-                    ? 'bg-[#101726] border border-white/10 text-slate-400'
-                    : 'bg-[#e0e3e5] text-[#454655]'
+                className={`font-['Outfit'] text-[10px] font-bold uppercase tracking-wider ${
+                  isDark ? 'text-indigo-400' : 'text-indigo-600'
                 }`}
               >
-                <span className="material-symbols-outlined text-[16px]">lock</span>
+                WORLD JOURNEY
               </span>
-              <span className="font-['Outfit'] text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                World 04 • Coming Up
+              <span className="text-xs font-bold truncate">
+                {selectedWorld.title}
               </span>
             </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                soundFX.playClick();
+                setViewMode((prev) => (prev === 'focused' ? 'all' : 'focused'));
+              }}
+              className={`px-2.5 py-1 rounded-xl text-[11px] font-bold font-['Outfit'] transition-all ${
+                viewMode === 'all'
+                  ? 'bg-indigo-600 text-white shadow-sm'
+                  : isDark
+                  ? 'bg-[#0f1420] text-slate-300 border border-white/10'
+                  : 'bg-slate-100 text-slate-700'
+              }`}
+            >
+              {viewMode === 'all' ? 'Focus View' : 'All Worlds'}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                soundFX.playClick();
+                onJumpToToday();
+              }}
+              className="flex items-center gap-1 h-8 px-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-white font-['Outfit'] text-xs font-bold shadow-md shadow-indigo-600/30 transition-all"
+            >
+              <span>Today</span>
+              <span className="material-symbols-outlined text-[15px]">bolt</span>
+            </button>
+          </div>
+        </div>
+
+        {/* ================= DYNAMIC HORIZONTAL WORLD SELECTOR ================= */}
+        <section className="mb-4">
+          <div className="flex items-center justify-between mb-2 px-1">
             <span
-              className={`font-['JetBrains_Mono'] text-[11px] px-2.5 py-0.5 rounded-full font-medium ${
-                theme === 'dark'
-                  ? 'bg-[#101726] border border-white/10 text-slate-400'
-                  : 'bg-[#eceef0] text-[#454655]'
+              className={`text-[11px] font-['Outfit'] font-bold tracking-wider uppercase ${
+                isDark ? 'text-slate-400' : 'text-slate-500'
               }`}
             >
-              Stage 4
+              ALL CORE TOPICS ({WORLDS_CATALOG.length} WORLDS)
             </span>
-          </div>
-
-          <div className="flex items-start gap-3">
-            <div
-              className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${
-                theme === 'dark'
-                  ? 'bg-[#101726] border border-white/10 text-indigo-400'
-                  : 'bg-[#e0e3e5] text-[#757687]'
+            <span
+              className={`text-[10px] font-mono font-semibold px-2 py-0.5 rounded-full ${
+                isDark ? 'bg-indigo-950/80 text-indigo-300' : 'bg-indigo-50 text-indigo-600'
               }`}
             >
-              <span className="material-symbols-outlined text-[28px]">data_object</span>
-            </div>
-            <div>
-              <h3 className="font-['Outfit'] text-base font-bold text-inherit">
-                Functions, Lambdas &amp; High-Order Flow
-              </h3>
-              <p className="font-['Outfit'] text-xs text-slate-400 mt-1 leading-relaxed">
-                Unlock functional programming, inline lambdas, and type contracts.
-              </p>
-            </div>
-          </div>
-
-          <div
-            className={`flex items-center justify-between pt-2 text-xs border-t ${
-              theme === 'dark' ? 'border-white/5 text-slate-400' : 'border-black/5 text-[#454655]'
-            }`}
-          >
-            <span className="flex items-center gap-1.5">
-              <span className="material-symbols-outlined text-[16px] text-amber-500">military_tech</span>
-              Mastery badge reward
-            </span>
-            <span className="font-['JetBrains_Mono'] font-bold text-indigo-400">
-              +320 XP Total
+              Unrestricted Core Catalog
             </span>
           </div>
-        </div>
-      </section>
 
-      {/* Tactile Encouragement Toast / Prompt */}
-      <div
-        className={`p-4 rounded-2xl flex items-center justify-between shadow-md ${
-          theme === 'dark'
-            ? 'bg-gradient-to-r from-indigo-950/60 to-slate-900/80 border border-indigo-500/20'
-            : 'bg-[#3748dd]/5 text-[#191c1e]'
-        }`}
-      >
-        <div className="flex items-center gap-3">
-          <div
-            className={`w-10 h-10 rounded-full flex items-center justify-center ${
-              theme === 'dark'
-                ? 'bg-indigo-600/20 border border-indigo-400/30 text-indigo-300 shadow-[0_0_10px_rgba(99,102,241,0.3)]'
-                : 'bg-[#dfe0ff] text-[#000965]'
-            }`}
-          >
-            <span className="material-symbols-outlined text-[22px]">rocket_launch</span>
+          {/* Scrollable World Navigation Strip */}
+          <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
+            {WORLDS_CATALOG.map((w) => {
+              const isSelected = w.id === selectedWorldId;
+              return (
+                <button
+                  key={w.id}
+                  type="button"
+                  onClick={() => handleWorldSelect(w.id)}
+                  className={`shrink-0 flex items-center gap-2 px-3 py-2 rounded-2xl border text-left transition-all active:scale-95 ${
+                    isSelected
+                      ? isDark
+                        ? 'bg-indigo-950/70 border-indigo-500 text-white shadow-md'
+                        : 'bg-indigo-50 border-indigo-400 text-indigo-950 shadow-sm'
+                      : isDark
+                      ? 'bg-[#151b28] border-white/10 text-slate-400 hover:text-white'
+                      : 'bg-white border-slate-200/80 text-slate-600 shadow-sm'
+                  }`}
+                >
+                  <span
+                    className={`w-6 h-6 rounded-lg flex items-center justify-center font-['Outfit'] text-xs font-bold shrink-0 ${
+                      isSelected
+                        ? 'bg-indigo-600 text-white shadow-sm'
+                        : isDark
+                        ? 'bg-[#0f1420] text-slate-400'
+                        : 'bg-slate-100 text-slate-600'
+                    }`}
+                  >
+                    {w.order}
+                  </span>
+                  <div className="flex flex-col min-w-0 pr-1">
+                    <span className="font-['Outfit'] text-xs font-bold truncate max-w-[130px]">
+                      {w.title}
+                    </span>
+                    <span className="text-[10px] text-slate-400">
+                      {w.lessons.length} lessons
+                    </span>
+                  </div>
+                </button>
+              );
+            })}
           </div>
-          <div>
-            <p className="font-['Outfit'] text-[15px] font-bold text-inherit">Only 3 tasks left!</p>
-            <p className="font-['Outfit'] text-xs text-slate-400">
-              Finish World 1 to unlock Logic &amp; Decision Making
-            </p>
+        </section>
+
+        {/* ================= FOCUSED WORLD OR ALL WORLDS VIEW ================= */}
+        {viewMode === 'focused' ? (
+          /* SINGLE FOCUSED WORLD TIMELINE (as in stitch prototype world_journey_curriculum) */
+          <div className="flex flex-col">
+            {/* World Hero Header */}
+            <section
+              className={`rounded-3xl p-5 border mb-5 transition-all ${
+                isDark
+                  ? 'bg-[#151b28] border-white/10 shadow-lg'
+                  : 'bg-white border-slate-200/80 shadow-sm'
+              }`}
+            >
+              {/* Kotlin Track Badge */}
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full mb-3 bg-white/10 border border-white/10">
+                <svg className="w-3.5 h-3.5 rounded-sm" fill="none" viewBox="0 0 24 24">
+                  <path d="M24 24H0V0H24L12 12L24 24Z" fill="url(#kotlin-grad)"></path>
+                  <defs>
+                    <linearGradient gradientUnits="userSpaceOnUse" id="kotlin-grad" x1="24" x2="0" y1="0" y2="24">
+                      <stop stopColor="#7F52FF"></stop>
+                      <stop offset="0.5" stopColor="#C711E1"></stop>
+                      <stop offset="1" stopColor="#E4485D"></stop>
+                    </linearGradient>
+                  </defs>
+                </svg>
+                <span className="text-[11px] font-mono font-bold tracking-wider uppercase">
+                  Kotlin Track
+                </span>
+              </div>
+
+              {/* Title & Subtitle */}
+              <div className="mb-4">
+                <p className="text-xs font-extrabold uppercase tracking-widest text-indigo-500 font-['Outfit']">
+                  World {selectedWorld.order}
+                </p>
+                <h1 className="text-2xl font-extrabold font-['Outfit'] tracking-tight">
+                  {selectedWorld.title}
+                </h1>
+                <p
+                  className={`text-xs mt-1 ${
+                    isDark ? 'text-slate-400' : 'text-slate-600'
+                  }`}
+                >
+                  {selectedWorld.subtitle}
+                </p>
+              </div>
+
+              {/* Mastery Progress Card */}
+              <div
+                className={`p-4 rounded-2xl border ${
+                  isDark
+                    ? 'bg-[#0f1420] border-white/5'
+                    : 'bg-[#f0f3f8] border-slate-200/60 shadow-sm'
+                }`}
+              >
+                <div className="flex justify-between items-center mb-2.5">
+                  <span className="text-xs font-mono font-bold text-indigo-500 tracking-wide uppercase">
+                    72% Mastered
+                  </span>
+                  <div
+                    className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-xs ${
+                      isDark
+                        ? 'bg-[#151b28] border-white/10 text-slate-300'
+                        : 'bg-white border-slate-200 text-slate-700 shadow-sm'
+                    }`}
+                  >
+                    <span className="text-[10px] font-mono font-bold uppercase text-slate-400">
+                      Today
+                    </span>
+                    <span className="w-1.5 h-1.5 rounded-full bg-indigo-500"></span>
+                    <span className="w-1.5 h-1.5 rounded-full bg-indigo-500"></span>
+                    <span
+                      className={`w-1.5 h-1.5 rounded-full ${
+                        isDark ? 'bg-slate-700' : 'bg-slate-300'
+                      }`}
+                    ></span>
+                    <span className="text-[11px] font-mono font-bold ml-0.5">2/3</span>
+                  </div>
+                </div>
+
+                {/* Progress Track */}
+                <div
+                  className={`w-full h-2.5 rounded-full overflow-hidden p-0.5 ${
+                    isDark ? 'bg-[#090d16]' : 'bg-slate-200'
+                  }`}
+                >
+                  <div
+                    className="h-full rounded-full bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 shadow-sm"
+                    style={{ width: '72%' }}
+                  ></div>
+                </div>
+              </div>
+            </section>
+
+            {/* Linear Curriculum Timeline */}
+            <section className="relative pl-3 pr-1">
+              {/* Central Connecting Stem Line */}
+              <div
+                aria-hidden="true"
+                className="absolute left-7 top-4 bottom-20 w-1 rounded-full bg-gradient-to-b from-indigo-500 via-indigo-500/50 to-slate-400"
+              />
+
+              {/* Dynamic Lesson Nodes */}
+              <div className="space-y-6">
+                {selectedWorld.lessons.map((lesson, idx) => {
+                  const isFirstThree = idx < 3;
+                  const isCurrent = idx === 3;
+                  const isBoss = lesson.isBoss;
+
+                  if (isBoss) {
+                    /* Final Trial Boss Card */
+                    return (
+                      <div key={lesson.id} className="relative z-10 pt-2">
+                        <div
+                          className={`rounded-3xl p-5 border shadow-xl relative overflow-hidden transition-all ${
+                            isDark
+                              ? 'bg-gradient-to-br from-indigo-950/60 via-[#151b28] to-[#0f1420] border-indigo-500/30'
+                              : 'bg-white border-slate-200/80 shadow-md'
+                          }`}
+                        >
+                          <div className="flex items-start justify-between">
+                            <div className="flex items-center gap-3">
+                              <div className="w-12 h-12 rounded-2xl bg-indigo-600 text-white flex items-center justify-center shadow-lg shadow-indigo-600/30">
+                                <span className="material-symbols-outlined text-[24px]">
+                                  military_tech
+                                </span>
+                              </div>
+                              <div>
+                                <div className="flex items-center gap-2 mb-0.5">
+                                  <span className="text-[10px] font-mono font-bold tracking-wide uppercase text-indigo-400">
+                                    Final Trial
+                                  </span>
+                                  <span className="text-slate-400 text-xs">•</span>
+                                  <span className="text-[10px] font-mono font-bold text-slate-400">
+                                    +{lesson.xpReward} XP
+                                  </span>
+                                </div>
+                                <h3 className="text-base font-extrabold font-['Outfit'] leading-tight">
+                                  {lesson.title}
+                                </h3>
+                                <p className="text-xs text-slate-400 mt-0.5">
+                                  {lesson.description}
+                                </p>
+                              </div>
+                            </div>
+
+                            <div
+                              className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${
+                                isDark
+                                  ? 'bg-[#090d16] text-slate-500 border border-white/5'
+                                  : 'bg-slate-200 text-slate-500'
+                              }`}
+                            >
+                              <span className="material-symbols-outlined text-[16px]">lock</span>
+                            </div>
+                          </div>
+
+                          <div className="mt-3 pt-2.5 border-t border-slate-500/20 flex items-center text-[11px] text-slate-400">
+                            <span className="inline-block w-1.5 h-1.5 rounded-full bg-slate-400 mr-2" />
+                            Locked until World {selectedWorld.order} lessons are cleared
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <div key={lesson.id} className="relative flex items-start gap-4 group">
+                      {/* Node Dot Indicator */}
+                      <div
+                        className={`relative z-10 w-9 h-9 rounded-full flex items-center justify-center shrink-0 border-2 transition-all ${
+                          isFirstThree
+                            ? 'bg-indigo-600 border-indigo-400 text-white shadow-md'
+                            : isCurrent
+                            ? 'bg-white dark:bg-[#151b28] border-indigo-500 text-indigo-500 shadow-md ring-4 ring-indigo-500/20 animate-pulse'
+                            : isDark
+                            ? 'bg-[#0f1420] border-slate-700 text-slate-500'
+                            : 'bg-white border-slate-300 text-slate-400 shadow-sm'
+                        }`}
+                      >
+                        {isFirstThree ? (
+                          <span className="material-symbols-outlined text-[18px]">check</span>
+                        ) : isCurrent ? (
+                          <span className="material-symbols-outlined text-[18px]">play_arrow</span>
+                        ) : (
+                          <span className="material-symbols-outlined text-[16px]">lock</span>
+                        )}
+                      </div>
+
+                      {/* Node Card Details */}
+                      <div
+                        className={`flex-1 pt-0.5 p-3.5 rounded-2xl border transition-all ${
+                          isCurrent
+                            ? isDark
+                              ? 'bg-[#151b28] border-indigo-500/50 shadow-md'
+                              : 'bg-white border-indigo-200 shadow-md'
+                            : isDark
+                            ? 'bg-[#151b28]/60 border-white/5'
+                            : 'bg-white/80 border-slate-200/60 shadow-sm'
+                        }`}
+                      >
+                        <div className="flex items-baseline justify-between">
+                          <h3 className="text-sm font-bold font-['Outfit']">
+                            {lesson.title}
+                          </h3>
+                          <span className="text-[10px] font-mono font-semibold text-slate-400">
+                            Lesson {selectedWorld.order}.{idx + 1}
+                          </span>
+                        </div>
+
+                        <div className="flex items-center gap-2 mt-1">
+                          <span
+                            className={`text-xs font-semibold ${
+                              isFirstThree
+                                ? 'text-emerald-500'
+                                : isCurrent
+                                ? 'text-indigo-500'
+                                : 'text-slate-400'
+                            }`}
+                          >
+                            {isFirstThree ? 'Completed' : isCurrent ? 'Available Now' : 'Locked'}
+                          </span>
+                          <span className="text-slate-400 text-xs">•</span>
+                          <span className="text-xs font-mono text-slate-400">
+                            +{lesson.xpReward} XP
+                          </span>
+                          <span className="text-slate-400 text-xs">•</span>
+                          <button
+                            type="button"
+                            onClick={() => handleLaunchLesson(lesson.title)}
+                            className="text-xs font-bold text-indigo-500 hover:text-indigo-400 underline decoration-indigo-300"
+                          >
+                            {isFirstThree ? 'Review' : 'Start'}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* World Transition Milestone */}
+              <div className="relative flex justify-center pt-6 pb-4">
+                {(() => {
+                  const nextOrder = selectedWorld.order + 1;
+                  const nextWorld = WORLDS_CATALOG.find((w) => w.order === nextOrder);
+                  if (!nextWorld) return null;
+                  return (
+                    <button
+                      type="button"
+                      onClick={() => handleWorldSelect(nextWorld.id)}
+                      className={`px-4 py-2.5 rounded-full border flex items-center gap-2 text-xs font-bold transition-all active:scale-95 ${
+                        isDark
+                          ? 'bg-[#151b28] border-white/10 text-slate-300 hover:text-white shadow-md'
+                          : 'bg-white border-slate-200 text-slate-700 hover:text-indigo-600 shadow-sm'
+                      }`}
+                    >
+                      <span className="material-symbols-outlined text-[16px] text-indigo-500">
+                        explore
+                      </span>
+                      <span className="font-['Outfit'] uppercase tracking-wider text-[11px]">
+                        WORLD {nextWorld.order} • {nextWorld.title}
+                      </span>
+                      <span className="material-symbols-outlined text-[16px]">chevron_right</span>
+                    </button>
+                  );
+                })()}
+              </div>
+            </section>
           </div>
-        </div>
-        <button
-          aria-label="Scroll to top"
-          onClick={() => {
-            soundFX.playClick();
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-          }}
-          type="button"
-          className={`w-9 h-9 rounded-full flex items-center justify-center active:scale-95 transition-transform ${
-            theme === 'dark'
-              ? 'bg-[#131b2e] border border-white/10 text-indigo-300 hover:text-white'
-              : 'bg-white text-[#3748dd] neumorph-raised-soft'
-          }`}
-        >
-          <span className="material-symbols-outlined text-[20px]">arrow_upward</span>
-        </button>
+        ) : (
+          /* ALL WORLDS EXPANDED BROWSER */
+          <div className="flex flex-col space-y-4">
+            {WORLDS_CATALOG.map((world) => (
+              <div
+                key={world.id}
+                className={`rounded-2xl p-4 border transition-all ${
+                  world.id === selectedWorldId
+                    ? isDark
+                      ? 'bg-indigo-950/40 border-indigo-500 shadow-md'
+                      : 'bg-indigo-50/70 border-indigo-300 shadow-sm'
+                    : isDark
+                    ? 'bg-[#151b28] border-white/10 shadow-sm'
+                    : 'bg-white border-slate-200/80 shadow-sm'
+                }`}
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <span
+                      className={`w-7 h-7 rounded-xl flex items-center justify-center font-['Outfit'] font-bold text-xs ${
+                        isDark ? 'bg-indigo-900/60 text-indigo-300' : 'bg-indigo-100 text-indigo-700'
+                      }`}
+                    >
+                      {world.order}
+                    </span>
+                    <div>
+                      <h3 className="font-['Outfit'] font-bold text-base">
+                        {world.title}
+                      </h3>
+                      <p className="text-xs text-slate-400">{world.subtitle}</p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedWorldId(world.id);
+                      setViewMode('focused');
+                    }}
+                    className="px-3 py-1 rounded-xl bg-indigo-600 text-white font-['Outfit'] text-xs font-bold shadow-sm"
+                  >
+                    View Timeline
+                  </button>
+                </div>
+
+                <div className="mt-3 pt-2 border-t border-slate-500/10 flex items-center justify-between text-xs text-slate-400">
+                  <span>{world.lessons.length} structured modules</span>
+                  <span>+{world.lessons.reduce((acc, l) => acc + l.xpReward, 0)} Total XP</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

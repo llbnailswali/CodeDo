@@ -807,6 +807,312 @@ export const WORLDS_CATALOG: WorldMeta[] = [
         isBoss: true
       }
     ]
+  },
+  {
+    id: 'world-11',
+    title: 'Networking & Serialization',
+    subtitle: 'Ktor Client, Kotlinx Serialization & RESTful APIs',
+    badge: 'NETWORKING',
+    color: '#0284c7',
+    order: 11,
+    lessons: [
+      {
+        id: 'net-ktor-client',
+        title: 'HTTP Requests with Ktor Client',
+        worldId: 'world-11',
+        skill: 'networking',
+        durationMinutes: 4,
+        xpReward: 25,
+        description: 'Creating HttpClient engines, GET/POST requests, headers, and request configuration.',
+        questionsCount: 5
+      },
+      {
+        id: 'net-kotlinx-serialization',
+        title: 'JSON Serialization with @Serializable',
+        worldId: 'world-11',
+        skill: 'serialization',
+        durationMinutes: 4,
+        xpReward: 25,
+        description: 'Decoding API JSON into typed data classes, custom serializers, and polymorphic models.',
+        questionsCount: 5
+      },
+      {
+        id: 'net-error-handling',
+        title: 'Network Resilience & Timeout Handling',
+        worldId: 'world-11',
+        skill: 'networking_resilience',
+        durationMinutes: 4,
+        xpReward: 25,
+        description: 'Exponential backoff retries, connection timeouts, HTTP status code interceptors, and offline fallbacks.',
+        questionsCount: 5
+      },
+      {
+        id: 'net-boss',
+        title: 'WORLD BOSS: API Gateway Champion',
+        worldId: 'world-11',
+        skill: 'api_gateway',
+        durationMinutes: 6,
+        xpReward: 50,
+        description: 'Build a production-grade resilient network client that gracefully handles token refreshes and network dropouts.',
+        questionsCount: 1,
+        isBoss: true
+      }
+    ]
+  },
+  {
+    id: 'world-12',
+    title: 'Local Persistence & Room',
+    subtitle: 'Entities, DAOs, Migrations & Reactive Flow',
+    badge: 'PERSISTENCE',
+    color: '#059669',
+    order: 12,
+    lessons: [
+      {
+        id: 'room-entities',
+        title: 'Room Entities & Database Schemas',
+        worldId: 'world-12',
+        skill: 'database_entities',
+        durationMinutes: 4,
+        xpReward: 25,
+        description: '@Entity, @PrimaryKey auto-generation, foreign key relations, and @ColumnInfo indexing.',
+        questionsCount: 5
+      },
+      {
+        id: 'room-daos',
+        title: 'DAOs & Reactive Flow Queries',
+        worldId: 'world-12',
+        skill: 'data_access_objects',
+        durationMinutes: 4,
+        xpReward: 25,
+        description: '@Insert, @Update, @Query with Flow<List<T>> continuous emission, and transaction boundaries.',
+        questionsCount: 5
+      },
+      {
+        id: 'room-migrations',
+        title: 'TypeConverters & Database Migrations',
+        worldId: 'world-12',
+        skill: 'migrations',
+        durationMinutes: 4,
+        xpReward: 25,
+        description: 'Custom object serializers with @TypeConverter and executing destructive-free schema migrations.',
+        questionsCount: 5
+      },
+      {
+        id: 'room-boss',
+        title: 'WORLD BOSS: Persistence Architect',
+        worldId: 'world-12',
+        skill: 'persistence_architect',
+        durationMinutes: 6,
+        xpReward: 50,
+        description: 'Construct a synchronized offline cache that emits live database updates into Jetpack Compose screens.',
+        questionsCount: 1,
+        isBoss: true
+      }
+    ]
+  },
+  {
+    id: 'world-13',
+    title: 'Dependency Injection',
+    subtitle: 'Hilt, Koin & Decoupled Modular Architecture',
+    badge: 'INJECTION',
+    color: '#d97706',
+    order: 13,
+    lessons: [
+      {
+        id: 'di-hilt-basics',
+        title: 'Hilt Fundamentals & @Inject',
+        worldId: 'world-13',
+        skill: 'hilt_injection',
+        durationMinutes: 4,
+        xpReward: 25,
+        description: '@HiltAndroidApp, constructor injection with @Inject, and injecting ViewModels into Composable screens.',
+        questionsCount: 5
+      },
+      {
+        id: 'di-modules',
+        title: 'Hilt Modules: @Provides & @Binds',
+        worldId: 'world-13',
+        skill: 'hilt_modules',
+        durationMinutes: 4,
+        xpReward: 25,
+        description: '@InstallIn(SingletonComponent::class), interface implementations, and third-party library provider modules.',
+        questionsCount: 5
+      },
+      {
+        id: 'di-koin',
+        title: 'Lightweight DI with Koin DSL',
+        worldId: 'world-13',
+        skill: 'koin_dsl',
+        durationMinutes: 4,
+        xpReward: 25,
+        description: 'Singletons, factories, viewModel definitions in pure Kotlin DSL without code generation overhead.',
+        questionsCount: 5
+      },
+      {
+        id: 'di-boss',
+        title: 'WORLD BOSS: Inversion of Control Sentinel',
+        worldId: 'world-13',
+        skill: 'ioc_mastery',
+        durationMinutes: 6,
+        xpReward: 50,
+        description: 'Design a clean multi-module dependency graph with swapped mock bindings for seamless integration testing.',
+        questionsCount: 1,
+        isBoss: true
+      }
+    ]
+  },
+  {
+    id: 'world-14',
+    title: 'Testing & Quality Assurance',
+    subtitle: 'Unit Testing, MockK, Turbine & Compose UI Tests',
+    badge: 'TESTING',
+    color: '#e11d48',
+    order: 14,
+    lessons: [
+      {
+        id: 'test-unit-mockk',
+        title: 'Unit Testing with JUnit5 & MockK',
+        worldId: 'world-14',
+        skill: 'unit_testing',
+        durationMinutes: 4,
+        xpReward: 25,
+        description: 'coEvery coroutine mocking, verify assertions, test dispatchers, and test fixture setup.',
+        questionsCount: 5
+      },
+      {
+        id: 'test-turbine-flow',
+        title: 'Turbine: Testing Kotlin Flows',
+        worldId: 'world-14',
+        skill: 'flow_testing',
+        durationMinutes: 4,
+        xpReward: 25,
+        description: 'Testing hot and cold flows with test.awaitItem(), awaitComplete(), and timing validation.',
+        questionsCount: 5
+      },
+      {
+        id: 'test-compose-ui',
+        title: 'Jetpack Compose UI Testing',
+        worldId: 'world-14',
+        skill: 'compose_testing',
+        durationMinutes: 4,
+        xpReward: 25,
+        description: 'createComposeRule(), semantic matchers (onNodeWithText, onNodeWithTag), and click/scroll interactions.',
+        questionsCount: 5
+      },
+      {
+        id: 'test-boss',
+        title: 'WORLD BOSS: Reliability Overlord',
+        worldId: 'world-14',
+        skill: 'qa_overlord',
+        durationMinutes: 6,
+        xpReward: 50,
+        description: 'Achieve 100% test coverage on a complex asynchronous ViewModel flow with error edge-cases.',
+        questionsCount: 1,
+        isBoss: true
+      }
+    ]
+  },
+  {
+    id: 'world-15',
+    title: 'Kotlin Multiplatform (KMP)',
+    subtitle: 'Shared Business Logic, expect/actual & Cross-Platform',
+    badge: 'MULTIPLATFORM',
+    color: '#8b5cf6',
+    order: 15,
+    lessons: [
+      {
+        id: 'kmp-architecture',
+        title: 'KMP Architecture & Project Structure',
+        worldId: 'world-15',
+        skill: 'kmp_structure',
+        durationMinutes: 4,
+        xpReward: 25,
+        description: 'commonMain, androidMain, iosMain source sets, and sharing data models across mobile ecosystems.',
+        questionsCount: 5
+      },
+      {
+        id: 'kmp-expect-actual',
+        title: 'Platform Interop with expect/actual',
+        worldId: 'world-15',
+        skill: 'expect_actual',
+        durationMinutes: 4,
+        xpReward: 25,
+        description: 'Bridging platform-specific APIs (UUID, KeyValue storage, device info) with native platform implementations.',
+        questionsCount: 5
+      },
+      {
+        id: 'kmp-compose-multiplatform',
+        title: 'Compose Multiplatform across Android & iOS',
+        worldId: 'world-15',
+        skill: 'compose_multiplatform',
+        durationMinutes: 4,
+        xpReward: 25,
+        description: 'Sharing 100% declarative UI code between Android and iOS using Skiko rendering.',
+        questionsCount: 5
+      },
+      {
+        id: 'kmp-boss',
+        title: 'WORLD BOSS: Cross-Platform Titan',
+        worldId: 'world-15',
+        skill: 'kmp_titan',
+        durationMinutes: 6,
+        xpReward: 50,
+        description: 'Implement a cross-platform currency converter running identical UI and business logic on Android and iOS.',
+        questionsCount: 1,
+        isBoss: true
+      }
+    ]
+  },
+  {
+    id: 'world-16',
+    title: 'Performance, Profiling & Security',
+    subtitle: 'Baseline Profiles, Memory Optimization & R8',
+    badge: 'PERFORMANCE',
+    color: '#ea580c',
+    order: 16,
+    lessons: [
+      {
+        id: 'perf-baseline-profiles',
+        title: 'Baseline Profiles & Cold-Start Optimization',
+        worldId: 'world-16',
+        skill: 'baseline_profiles',
+        durationMinutes: 4,
+        xpReward: 25,
+        description: 'Ahead-Of-Time (AOT) compilation, Macrobenchmark rule testing, and eliminating frame drops during startup.',
+        questionsCount: 5
+      },
+      {
+        id: 'perf-memory-leaks',
+        title: 'Memory Optimization & Coroutine Scope Leaks',
+        worldId: 'world-16',
+        skill: 'memory_profiling',
+        durationMinutes: 4,
+        xpReward: 25,
+        description: 'Preventing Context leaks, job cancellation on screen exit, and analyzing Android Studio memory dumps.',
+        questionsCount: 5
+      },
+      {
+        id: 'perf-security',
+        title: 'EncryptedSharedPreferences & Biometric Auth',
+        worldId: 'world-16',
+        skill: 'app_security',
+        durationMinutes: 4,
+        xpReward: 25,
+        description: 'MasterKey hardware keystore encryption, BiometricPrompt authentication, and R8 obfuscation rules.',
+        questionsCount: 5
+      },
+      {
+        id: 'perf-boss',
+        title: 'WORLD BOSS: High-Speed Cyber Guardian',
+        worldId: 'world-16',
+        skill: 'performance_guardian',
+        durationMinutes: 6,
+        xpReward: 50,
+        description: 'Audit and optimize an unoptimized app to hit rock-solid 120 FPS and bank-grade data security!',
+        questionsCount: 1,
+        isBoss: true
+      }
+    ]
   }
 ];
 
