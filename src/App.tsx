@@ -157,7 +157,7 @@ export default function App() {
   };
 
   return (
-    <div className={`min-h-screen w-full flex flex-col relative transition-colors duration-300 ${
+    <div className={`min-h-full min-h-screen w-full flex flex-col relative transition-colors duration-300 ${
       theme === 'dark' ? 'bg-[#0b0f19] text-[#dfe2f1]' : 'bg-[#f8f9fb] text-[#191c1e]'
     }`}>
         {/* Top Header */}

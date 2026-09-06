@@ -31,7 +31,7 @@ export const LearnView: React.FC<LearnViewProps> = ({
 
   return (
     <div
-      className={`min-h-screen w-full flex flex-col items-center select-none pb-32 pt-1 px-4 transition-colors duration-300 ${
+      className={`min-h-full min-h-screen w-full flex flex-col items-center select-none pb-32 pt-1 px-4 transition-colors duration-300 ${
         isDark ? 'bg-[#0b0f19] text-[#f1f3f8]' : 'bg-[#e8eaf0] text-[#1e2433]'
       }`}
     >

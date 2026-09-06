@@ -45,7 +45,7 @@ export const CurriculumExplorer: React.FC<CurriculumExplorerProps> = ({
 
   return (
     <div
-      className={`min-h-screen w-full flex flex-col items-center select-none pb-28 pt-2 px-4 transition-colors duration-300 ${
+      className={`min-h-full min-h-screen w-full flex flex-col items-center select-none pb-28 pt-2 px-4 transition-colors duration-300 ${
         isDark ? 'bg-[#0b0f19] text-[#e2e8f0]' : 'bg-[#f1f4f9] text-[#1e2433]'
       }`}
     >

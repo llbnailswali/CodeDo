@@ -137,6 +137,30 @@ export const FiveStageLessonRunner: React.FC<FiveStageLessonRunnerProps> = ({
   // Badge interactive tap animation state
   const [badgePressed, setBadgePressed] = useState<boolean>(false);
 
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    const rootEl = document.getElementById('root');
+    if (rootEl) {
+      rootEl.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
+  const scrollToElement = (elementId: string, headerOffset = 120) => {
+    const el = document.getElementById(elementId);
+    if (!el) return;
+    const rootEl = document.getElementById('root');
+    if (rootEl && rootEl.scrollHeight > rootEl.clientHeight) {
+      const rootRect = rootEl.getBoundingClientRect();
+      const elRect = el.getBoundingClientRect();
+      const targetScroll = rootEl.scrollTop + (elRect.top - rootRect.top) - headerOffset;
+      rootEl.scrollTo({ top: Math.max(0, targetScroll), behavior: 'smooth' });
+    } else {
+      const elementPosition = el.getBoundingClientRect().top;
+      const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+      window.scrollTo({ top: Math.max(0, offsetPosition), behavior: 'smooth' });
+    }
+  };
+
   // Sync browser/device back button with screen back button
   useEffect(() => {
     window.history.replaceState({ codedoStage: 1 }, '');
@@ -144,7 +168,7 @@ export const FiveStageLessonRunner: React.FC<FiveStageLessonRunnerProps> = ({
     const handlePopState = (e: PopStateEvent) => {
       if (e.state && typeof e.state.codedoStage === 'number') {
         setCurrentStage(e.state.codedoStage);
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+        scrollToTop();
       } else {
         onExit();
       }
@@ -164,7 +188,9 @@ export const FiveStageLessonRunner: React.FC<FiveStageLessonRunnerProps> = ({
       if (!ticking) {
         window.requestAnimationFrame(() => {
           const cards = lessonData.explore.cards;
-          const scrollPos = window.scrollY + 140;
+          const rootEl = document.getElementById('root');
+          const currentScroll = rootEl && rootEl.scrollTop > 0 ? rootEl.scrollTop : (window.scrollY || document.documentElement.scrollTop || 0);
+          const scrollPos = currentScroll + 140;
           for (let i = cards.length - 1; i >= 0; i--) {
             const el = document.getElementById(`explore-card-${i}`);
             if (el && el.offsetTop <= scrollPos) {
@@ -178,7 +204,16 @@ export const FiveStageLessonRunner: React.FC<FiveStageLessonRunnerProps> = ({
       }
     };
     window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
+    const rootEl = document.getElementById('root');
+    if (rootEl) {
+      rootEl.addEventListener('scroll', handleScroll, { passive: true });
+    }
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      if (rootEl) {
+        rootEl.removeEventListener('scroll', handleScroll);
+      }
+    };
   }, [currentStage, lessonData.explore.cards]);
 
   // Sync scroll position with Step 3 (Predict) question chips
@@ -189,7 +224,9 @@ export const FiveStageLessonRunner: React.FC<FiveStageLessonRunnerProps> = ({
       if (!ticking) {
         window.requestAnimationFrame(() => {
           const questions = lessonData.predict.questions;
-          const scrollPos = window.scrollY + 140;
+          const rootEl = document.getElementById('root');
+          const currentScroll = rootEl && rootEl.scrollTop > 0 ? rootEl.scrollTop : (window.scrollY || document.documentElement.scrollTop || 0);
+          const scrollPos = currentScroll + 140;
           for (let i = questions.length - 1; i >= 0; i--) {
             const el = document.getElementById(`predict-q-${i}`);
             if (el && el.offsetTop <= scrollPos) {
@@ -203,7 +240,16 @@ export const FiveStageLessonRunner: React.FC<FiveStageLessonRunnerProps> = ({
       }
     };
     window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
+    const rootEl = document.getElementById('root');
+    if (rootEl) {
+      rootEl.addEventListener('scroll', handleScroll, { passive: true });
+    }
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      if (rootEl) {
+        rootEl.removeEventListener('scroll', handleScroll);
+      }
+    };
   }, [currentStage, lessonData.predict.questions]);
 
   const handleNextStage = () => {
@@ -212,7 +258,7 @@ export const FiveStageLessonRunner: React.FC<FiveStageLessonRunnerProps> = ({
       const nextStage = currentStage + 1;
       window.history.pushState({ codedoStage: nextStage }, '');
       setCurrentStage(nextStage);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      scrollToTop();
     } else {
       soundFX.playSuccess();
       onCompleteLesson(lessonData.mastered.xpEarned);
@@ -232,7 +278,7 @@ export const FiveStageLessonRunner: React.FC<FiveStageLessonRunnerProps> = ({
     soundFX.playClick();
     window.history.pushState({ codedoStage: step }, '');
     setCurrentStage(step);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    scrollToTop();
   };
 
   const handleRunCode = () => {
@@ -599,13 +645,7 @@ export const FiveStageLessonRunner: React.FC<FiveStageLessonRunnerProps> = ({
                     onClick={() => {
                       soundFX.playClick();
                       setExploreCardIndex(idx);
-                      const el = document.getElementById(`explore-card-${idx}`);
-                      if (el) {
-                        const headerOffset = 120;
-                        const elementPosition = el.getBoundingClientRect().top;
-                        const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
-                        window.scrollTo({ top: offsetPosition, behavior: 'smooth' });
-                      }
+                      scrollToElement(`explore-card-${idx}`, 120);
                     }}
                     className={`text-xs font-bold px-3 py-1 rounded-full transition-all ${
                       exploreCardIndex === idx
@@ -831,13 +871,7 @@ export const FiveStageLessonRunner: React.FC<FiveStageLessonRunnerProps> = ({
                       onClick={() => {
                         soundFX.playClick();
                         setActivePredictCardIdx(idx);
-                        const el = document.getElementById(`predict-q-${idx}`);
-                        if (el) {
-                          const headerOffset = 120;
-                          const elementPosition = el.getBoundingClientRect().top;
-                          const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
-                          window.scrollTo({ top: offsetPosition, behavior: 'smooth' });
-                        }
+                        scrollToElement(`predict-q-${idx}`, 120);
                       }}
                       className={`text-xs font-bold px-2.5 py-1 rounded-full transition-all flex items-center gap-1 ${
                         isSelected
