@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { AppTheme, LessonQuestion, TabType, UserStats } from './types';
+import { AppTheme, AppFontSize, LessonQuestion, TabType, UserStats } from './types';
 import {
   ALL_CURRICULUM_QUESTIONS,
   DAILY_BATTLE_POOL,
@@ -28,6 +28,7 @@ import { FiveStageLessonRunner } from './components/FiveStageLessonRunner';
 
 export default function App() {
   const [theme, setTheme] = useState<AppTheme>(() => StorageManager.getTheme());
+  const [fontSize, setFontSize] = useState<AppFontSize>(() => StorageManager.getFontSize());
   const [activeTab, setActiveTab] = useState<TabType>('learn');
   const [isLessonActive, setIsLessonActive] = useState<boolean>(false);
   const [fiveStageLessonKey, setFiveStageLessonKey] = useState<string | null>(null);
@@ -63,6 +64,19 @@ export default function App() {
     }
     StorageManager.setTheme(theme);
   }, [theme]);
+
+  // Sync font size class and data-attribute on root element for app-wide font scaling
+  useEffect(() => {
+    document.documentElement.classList.remove('font-size-small', 'font-size-medium', 'font-size-large');
+    document.documentElement.classList.add(`font-size-${fontSize}`);
+    document.documentElement.setAttribute('data-font-size', fontSize);
+    StorageManager.setFontSize(fontSize);
+  }, [fontSize]);
+
+  const handleSetFontSize = (newSize: AppFontSize) => {
+    setFontSize(newSize);
+    StorageManager.setFontSize(newSize);
+  };
 
   const toggleTheme = () => {
     setTheme((prev) => {
@@ -262,6 +276,8 @@ export default function App() {
             /* User Profile & Settings */
             <ProfileView
               theme={theme}
+              fontSize={fontSize}
+              onSetFontSize={handleSetFontSize}
               userStats={userStats}
               onStartLesson={() => setFiveStageLessonKey('variables')}
               onOpenCurriculum={() => handleOpenCurriculum('world-1')}

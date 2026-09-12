@@ -1,4 +1,5 @@
 export type AppTheme = 'light' | 'dark';
+export type AppFontSize = 'small' | 'medium' | 'large';
 
 export type TabType = 'learn' | 'practice' | 'leaderboard' | 'profile' | 'curriculum';
 

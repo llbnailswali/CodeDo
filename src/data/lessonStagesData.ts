@@ -409,7 +409,11 @@ export const FUNCTIONS_LESSON: FiveStageLesson = {
       returns: 'Int'
     },
     fileName: 'solution.kt',
-    initialCode: 'fun multiply(a: Int, b: Int): Int {\n    return a * b\n}',
+    initialCode: `// 1. Declare function multiply that receives (a: Int, b: Int) and returns Int:
+fun multiply(a: Int, b: Int): Int {
+    // 2. Write code to return the product of a and b:
+    
+}`,
     solutionCode: 'fun multiply(a: Int, b: Int): Int {\n    return a * b\n}',
     sampleInput: 'multiply(4, 5)',
     expectedOutput: '20',
@@ -629,7 +633,16 @@ export const LOOPS_LESSON: FiveStageLesson = {
       returns: 'Int'
     },
     fileName: 'loop_solution.kt',
-    initialCode: 'fun sumRange(max: Int): Int {\n    var sum = 0\n    for (i in 1..max) {\n        sum += i\n    }\n    return sum\n}',
+    initialCode: `fun sumRange(max: Int): Int {
+    // 1. Declare a mutable accumulator variable 'sum' starting at 0:
+    
+    // 2. Write a for-loop for numbers from 1 up to max (1..max):
+    
+        // 3. Add each number i to sum (sum += i):
+        
+    // 4. Return the calculated sum:
+    
+}`,
     solutionCode: 'fun sumRange(max: Int): Int {\n    var sum = 0\n    for (i in 1..max) {\n        sum += i\n    }\n    return sum\n}',
     sampleInput: 'sumRange(4)',
     expectedOutput: '10',
@@ -955,17 +968,14 @@ export const VARIABLES_LESSON: FiveStageLesson = {
     },
     fileName: 'Main.kt',
     initialCode: `fun main() {
-    // 1. Declare immutable player name "Alex":
-    val player = "Alex"
+    // 1. Declare immutable player name "Alex" using val:
     
-    // 2. Declare mutable coins starting at 25:
-    var coins = 25
+    // 2. Declare mutable coins starting at 25 using var:
     
-    // 3. Add 15 coins to the inventory:
-    coins += 15
+    // 3. Add 15 coins to the inventory (coins += 15):
     
-    // 4. Print the formatted inventory:
-    println("Player $player holds $coins coins")
+    // 4. Print the formatted inventory: "Player $player holds $coins coins"
+    
 }`,
     solutionCode: `fun main() {
     val player = "Alex"

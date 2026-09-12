@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
-import { AppTheme, UserStats } from '../types';
+import { AppTheme, AppFontSize, UserStats } from '../types';
 import { soundFX } from '../utils/audio';
 
 interface ProfileViewProps {
   theme: AppTheme;
+  fontSize?: AppFontSize;
+  onSetFontSize?: (size: AppFontSize) => void;
   userStats: UserStats;
   onStartLesson: () => void;
   onOpenCurriculum?: () => void;
@@ -17,6 +19,8 @@ interface ProfileViewProps {
 
 export const ProfileView: React.FC<ProfileViewProps> = ({
   theme,
+  fontSize = 'medium',
+  onSetFontSize,
   userStats,
   onStartLesson,
   onOpenCurriculum,
@@ -304,6 +308,115 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
             {tapToRevealEnabled ? 'ON' : 'OFF'}
           </div>
         </button>
+      </div>
+
+      {/* ================= FONT SIZE SETTINGS ================= */}
+      <div
+        className={`p-4 rounded-2xl mb-4 flex flex-col gap-3.5 transition-all ${
+          isDark
+            ? 'bg-[#151b28] border border-white/10 shadow-md'
+            : 'bg-white border border-slate-200/80 neu-raised'
+        }`}
+      >
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="material-symbols-outlined text-[18px] text-indigo-500 dark:text-indigo-400">
+              format_size
+            </span>
+            <span className="font-['Outfit'] text-xs font-bold text-slate-400 uppercase tracking-wider">
+              Font Size Settings
+            </span>
+          </div>
+          <span className="px-2 py-0.5 rounded-md font-mono text-[10px] font-bold bg-indigo-500/15 text-indigo-500 dark:text-indigo-400 border border-indigo-500/20 uppercase">
+            {fontSize}
+          </span>
+        </div>
+
+        <p className="font-['Outfit'] text-xs text-slate-400 leading-snug">
+          Adjust the reading size across the whole app, including lesson explanations, Kotlin code snippets, and interface text.
+        </p>
+
+        {/* 3-Tier Font Size Selector */}
+        <div className="grid grid-cols-3 gap-2">
+          {(['small', 'medium', 'large'] as const).map((size) => {
+            const isSelected = fontSize === size;
+            const labels = {
+              small: { title: 'Small', sample: 'Aa', desc: 'Compact' },
+              medium: { title: 'Medium', sample: 'Aa', desc: 'Default' },
+              large: { title: 'Large', sample: 'Aa', desc: 'Large' },
+            };
+            const sampleSizeClass = {
+              small: 'text-xs',
+              medium: 'text-sm font-medium',
+              large: 'text-lg font-bold',
+            };
+
+            return (
+              <button
+                key={size}
+                type="button"
+                onClick={() => {
+                  soundFX.playClick();
+                  onSetFontSize?.(size);
+                }}
+                className={`p-3 rounded-xl flex flex-col items-center justify-center gap-1 border transition-all cursor-pointer ${
+                  isSelected
+                    ? isDark
+                      ? 'bg-indigo-600/25 border-indigo-500 text-white shadow-sm shadow-indigo-500/25 ring-1 ring-indigo-500/50'
+                      : 'bg-indigo-50 border-indigo-400 text-indigo-950 shadow-sm ring-1 ring-indigo-300'
+                    : isDark
+                    ? 'bg-[#0f1422] border-white/5 text-slate-400 hover:border-white/10 hover:text-slate-200'
+                    : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100 hover:text-slate-800'
+                }`}
+              >
+                <span
+                  className={`font-serif tracking-tight leading-none ${sampleSizeClass[size]} ${
+                    isSelected ? 'text-indigo-500 dark:text-indigo-400' : ''
+                  }`}
+                >
+                  {labels[size].sample}
+                </span>
+                <span className="font-['Outfit'] text-xs font-bold capitalize">
+                  {labels[size].title}
+                </span>
+                <span className="font-mono text-[9px] text-slate-400">
+                  {labels[size].desc}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Live Font Size Code & Text Preview */}
+        <div
+          className={`p-3 rounded-xl border flex flex-col gap-2 transition-all ${
+            isDark ? 'bg-[#0f1422] border-white/5' : 'bg-slate-50 border-slate-200'
+          }`}
+        >
+          <div className="flex items-center justify-between text-[10px] font-mono text-slate-400 border-b border-white/5 dark:border-white/5 pb-1.5">
+            <span className="flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+              <span>LIVE PREVIEW</span>
+            </span>
+            <span className="uppercase font-semibold text-indigo-500 dark:text-indigo-400">
+              Active: {fontSize}
+            </span>
+          </div>
+          <div className="font-mono text-xs text-indigo-700 dark:text-indigo-300 bg-black/5 dark:bg-black/40 p-2.5 rounded-lg border border-black/5 dark:border-white/5">
+            <code>
+              <span className="text-purple-600 dark:text-purple-400 font-semibold">val</span> fontSize ={' '}
+              <span className="text-emerald-600 dark:text-emerald-400">"{fontSize}"</span>
+              <br />
+              <span className="text-blue-600 dark:text-blue-400">println</span>(
+              <span className="text-amber-600 dark:text-amber-400">"Readable Kotlin everywhere"</span>)
+            </code>
+          </div>
+          <p className="font-['Outfit'] text-xs text-slate-500 dark:text-slate-400 leading-snug">
+            {fontSize === 'small' && 'Compact view: More information fits onto your screen at once.'}
+            {fontSize === 'medium' && 'Standard view: Balanced typography designed for optimal learning.'}
+            {fontSize === 'large' && 'Expanded view: Enhanced legibility for comfortable reading of all content.'}
+          </p>
+        </div>
       </div>
 
       {/* Streak Calendar / Weekly Heatmap */}

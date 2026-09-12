@@ -18,6 +18,8 @@ interface WriteRunStageProps {
   setActualOutput?: (output: string) => void;
   onRunCode?: () => void;
   onContinue: () => void;
+  tapToRevealEnabled?: boolean;
+  onOutputMatch?: (matches: boolean) => void;
 }
 
 // Reveal steps:
@@ -41,9 +43,31 @@ export const WriteRun: React.FC<WriteRunStageProps> = ({
   setActualOutput,
   onRunCode,
   onContinue,
+  tapToRevealEnabled = true,
+  onOutputMatch,
 }) => {
   const [executionResult, setExecutionResult] = useState<KotlinExecutionResult | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const normalizeOutput = (str?: string) =>
+    (str || '').replace(/\r\n/g, '\n').trim();
+
+  const targetExpected = data.expectedOutput || data.testCase?.expected;
+
+  const isOutputMatching = Boolean(
+    targetExpected &&
+      executionResult?.success &&
+      executionResult.output !== undefined &&
+      normalizeOutput(executionResult.output) === normalizeOutput(targetExpected)
+  );
+
+  const handleCodeChange = (newCode: string) => {
+    setUserCode(newCode);
+    setExecutionResult(null);
+    if (onOutputMatch) {
+      onOutputMatch(false);
+    }
+  };
 
   const autoResizeTextarea = () => {
     const textarea = textareaRef.current;
@@ -54,6 +78,23 @@ export const WriteRun: React.FC<WriteRunStageProps> = ({
     const minHeightBasedOnLines = lines * 26;
     const computedHeight = Math.max(textarea.scrollHeight, minHeightBasedOnLines);
     textarea.style.height = `${computedHeight}px`;
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Tab') {
+      e.preventDefault();
+      const textarea = textareaRef.current;
+      if (!textarea) return;
+      const start = textarea.selectionStart;
+      const end = textarea.selectionEnd;
+      const value = textarea.value;
+      const newValue = value.substring(0, start) + '    ' + value.substring(end);
+      setUserCode(newValue);
+      requestAnimationFrame(() => {
+        textarea.selectionStart = textarea.selectionEnd = start + 4;
+        autoResizeTextarea();
+      });
+    }
   };
 
   useLayoutEffect(() => {
@@ -109,7 +150,7 @@ export const WriteRun: React.FC<WriteRunStageProps> = ({
     }
   };
 
-  const isFullyRevealed = revealStep >= MAX_REVEAL_STEP;
+  const isFullyRevealed = !tapToRevealEnabled || revealStep >= MAX_REVEAL_STEP;
 
   return (
     <div
@@ -126,16 +167,41 @@ export const WriteRun: React.FC<WriteRunStageProps> = ({
             : 'bg-white border-slate-100 shadow-[0_10px_25px_-3px_rgba(15,23,42,0.04)]'
         }`}
       >
-        <h1
-          className={`font-['Outfit'] text-2xl font-semibold mb-1.5 tracking-tight ${
-            isDark ? 'text-white' : 'text-slate-900'
-          }`}
-        >
-          {data.title}
-        </h1>
+        <div className="flex items-start justify-between gap-3 mb-1.5">
+          <h1
+            className={`font-['Outfit'] text-2xl font-semibold tracking-tight ${
+              isDark ? 'text-white' : 'text-slate-900'
+            }`}
+          >
+            {data.title}
+          </h1>
+          {tapToRevealEnabled && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                soundFX.playClick();
+                setRevealStep(0);
+              }}
+              title="Reset to step 0 to re-test screen tap"
+              className={`shrink-0 text-xs font-['Outfit'] font-semibold px-2.5 py-1 rounded-xl border flex items-center gap-1 transition-all cursor-pointer select-none active:scale-95 ${
+                isDark
+                  ? 'bg-[#121622] text-slate-300 border-[#262c3d] hover:text-white hover:border-indigo-500/50'
+                  : 'bg-slate-100 text-slate-600 border-slate-200 hover:text-slate-900 hover:border-indigo-300'
+              }`}
+            >
+              <span className="material-symbols-outlined text-[15px] text-indigo-500">
+                replay
+              </span>
+              <span>
+                {revealStep < MAX_REVEAL_STEP ? `Tap ${revealStep}/${MAX_REVEAL_STEP}` : 'Reset Tap'}
+              </span>
+            </button>
+          )}
+        </div>
 
-        {/* 1: Challenge Description (Revealed on tap 1) */}
-        {revealStep >= 1 && (
+        {/* 1: Challenge Description (Revealed on tap 1 or if tapToReveal is disabled) */}
+        {(!tapToRevealEnabled || revealStep >= 1) && (
           <p
             className={`text-xs leading-relaxed transition-all duration-300 animate-fadeIn ${
               isDark ? 'text-slate-300' : 'text-slate-600'
@@ -146,8 +212,8 @@ export const WriteRun: React.FC<WriteRunStageProps> = ({
         )}
       </section>
 
-      {/* 2: Requirements Card (Revealed on tap 2) */}
-      {revealStep >= 2 && (
+      {/* 2: Requirements Card (Revealed on tap 2 or if tapToReveal is disabled) */}
+      {(!tapToRevealEnabled || revealStep >= 2) && (
         <section
           className={`rounded-2xl p-4 border mb-4 transition-all duration-300 animate-fadeIn ${
             isDark
@@ -216,8 +282,8 @@ export const WriteRun: React.FC<WriteRunStageProps> = ({
         </section>
       )}
 
-      {/* 3: Code Editor & Execution section (Revealed on tap 3) */}
-      {revealStep >= 3 && (
+      {/* 3: Code Editor & Execution section (Revealed on tap 3 or if tapToReveal is disabled) */}
+      {(!tapToRevealEnabled || revealStep >= 3) && (
         <div className="transition-all duration-300 animate-fadeIn">
           {/* Code Editor Container */}
           <section
@@ -225,40 +291,68 @@ export const WriteRun: React.FC<WriteRunStageProps> = ({
             className="rounded-2xl border bg-slate-950 border-slate-800 shadow-xl mb-4 overflow-hidden"
           >
             {/* Window chrome / tabs */}
-            <div className="bg-slate-900/90 px-4 py-3 border-b border-slate-800 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className="flex gap-1.5">
-                  <span className="w-2.5 h-2.5 rounded-full bg-rose-500/80" />
-                  <span className="w-2.5 h-2.5 rounded-full bg-amber-500/80" />
-                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-500/80" />
+            <div className="bg-slate-900/90 px-4 py-2.5 border-b border-slate-800 flex items-start justify-between gap-3">
+              {/* Left Column: Filename on top, "x lines" below it */}
+              <div className="flex flex-col gap-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <div className="flex gap-1.5 shrink-0">
+                    <span className="w-2.5 h-2.5 rounded-full bg-rose-500/80" />
+                    <span className="w-2.5 h-2.5 rounded-full bg-amber-500/80" />
+                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-500/80" />
+                  </div>
+                  <div className="h-3.5 w-[1px] bg-slate-800 mx-0.5 shrink-0" />
+                  <span className="font-mono text-xs text-slate-200 font-medium truncate">
+                    {data.fileName || 'Main.kt'}
+                  </span>
                 </div>
-                <div className="h-4 w-[1px] bg-slate-800 mx-1" />
-                <span className="font-mono text-xs text-slate-300 font-medium">
-                  {data.fileName || 'solution.kt'}
-                </span>
-                <span className="text-[10px] font-mono text-slate-500 px-1.5 py-0.5 rounded bg-slate-800/80">
-                  {userCode.split('\n').length} lines
-                </span>
+                <div className="pl-8">
+                  <span className="text-[10px] font-mono text-slate-400 px-1.5 py-0.5 rounded bg-slate-800/80 inline-block">
+                    {userCode.split('\n').length} lines
+                  </span>
+                </div>
               </div>
-              <div className="flex items-center gap-2">
-                {userCode !== data.initialCode && (
+
+              {/* Right Column: "Kotlin 1.9" on top, "Solution" below it */}
+              <div className="flex flex-col items-end gap-1 shrink-0">
+                <span className="text-[10px] font-mono text-indigo-400 uppercase tracking-wider font-semibold">
+                  Kotlin 1.9
+                </span>
+                <div className="flex items-center gap-1.5">
+                  {userCode !== data.initialCode && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        soundFX.playClick();
+                        handleCodeChange(data.initialCode);
+                      }}
+                      className="text-[11px] font-mono text-slate-400 hover:text-indigo-300 flex items-center gap-1 transition-colors px-2 py-0.5 rounded hover:bg-slate-800 cursor-pointer"
+                      title="Reset to commented instructions"
+                    >
+                      <span className="material-symbols-outlined text-[13px]">restart_alt</span>
+                      <span>Reset</span>
+                    </button>
+                  )}
                   <button
                     type="button"
                     onClick={(e) => {
                       e.stopPropagation();
                       soundFX.playClick();
-                      setUserCode(data.initialCode);
+                      handleCodeChange(data.solutionCode);
                     }}
-                    className="text-[11px] font-mono text-slate-400 hover:text-indigo-300 flex items-center gap-1 transition-colors px-2 py-0.5 rounded hover:bg-slate-800 cursor-pointer"
-                    title="Reset to initial program code"
+                    className={`text-[11px] font-mono flex items-center gap-1 transition-colors px-2 py-0.5 rounded cursor-pointer ${
+                      userCode.trim() === data.solutionCode.trim()
+                        ? 'text-emerald-400 bg-emerald-950/40 border border-emerald-800/40'
+                        : 'text-amber-400 hover:text-amber-300 hover:bg-slate-800'
+                    }`}
+                    title="Insert full solution code"
                   >
-                    <span className="material-symbols-outlined text-[13px]">restart_alt</span>
-                    <span>Reset</span>
+                    <span className="material-symbols-outlined text-[13px]">
+                      {userCode.trim() === data.solutionCode.trim() ? 'check_circle' : 'lightbulb'}
+                    </span>
+                    <span>Solution</span>
                   </button>
-                )}
-                <span className="text-[10px] font-mono text-indigo-400 uppercase tracking-wider font-semibold">
-                  Kotlin 1.9
-                </span>
+                </div>
               </div>
             </div>
 
@@ -288,15 +382,17 @@ export const WriteRun: React.FC<WriteRunStageProps> = ({
                         wrap="off"
                         value={userCode}
                         onChange={(e) => {
-                          setUserCode(e.target.value);
+                          handleCodeChange(e.target.value);
                           autoResizeTextarea();
                         }}
+                        onKeyDown={handleKeyDown}
                         onInput={autoResizeTextarea}
                         className="w-full bg-transparent border-0 outline-none text-indigo-300 font-mono text-xs leading-[1.625rem] resize-none p-0 focus:ring-0 overflow-y-hidden overflow-x-hidden block whitespace-pre"
                         spellCheck={false}
                       />
-                      <div className="text-slate-500 italic text-[11px] pt-2 select-none">
-                        // Ready to execute &bull; Click to edit program
+                      <div className="text-slate-400 font-sans text-[11px] pt-2 select-none flex items-center gap-1.5">
+                        <span className="material-symbols-outlined text-[14px] text-amber-400">edit_note</span>
+                        <span>Write your code below each commented instruction &bull; Tap <strong>RUN CODE</strong> to test</span>
                       </div>
                     </div>
                   </div>
@@ -320,6 +416,15 @@ export const WriteRun: React.FC<WriteRunStageProps> = ({
               }
               if (onRunCode) {
                 onRunCode();
+              }
+              const matches = Boolean(
+                targetExpected &&
+                  res.success &&
+                  res.output !== undefined &&
+                  normalizeOutput(res.output) === normalizeOutput(targetExpected)
+              );
+              if (onOutputMatch) {
+                onOutputMatch(matches);
               }
               scrollToOutput();
             }}
@@ -357,28 +462,49 @@ export const WriteRun: React.FC<WriteRunStageProps> = ({
                 touch_app
               </span>
               <span className="text-xs font-semibold font-['Outfit'] tracking-wide">
-                Tap to continue
+                Tap to continue ({revealStep + 1}/{MAX_REVEAL_STEP})
               </span>
             </button>
           </div>
-        ) : executionResult && !executionResult.success ? (
-          /* When there is an active compilation/runtime error, instruct user to fix */
-          <div className="w-full h-14 rounded-2xl bg-rose-950/40 border border-rose-800/50 text-rose-300 font-bold font-['Outfit'] text-sm flex items-center justify-center gap-2 transition-all">
-            <span className="material-symbols-outlined text-[18px]">error</span>
-            <span>Fix error above to continue</span>
-          </div>
-        ) : (
+        ) : isOutputMatching ? (
+          /* ONLY shown once the program prints the expected output! */
           <button
             type="button"
             onClick={(e) => {
               e.stopPropagation();
+              soundFX.playSuccess();
               onContinue();
             }}
-            className="w-full h-14 rounded-2xl bg-indigo-600 hover:bg-indigo-700 active:scale-[0.99] text-white font-bold font-['Outfit'] text-sm shadow-lg shadow-indigo-600/35 flex items-center justify-center gap-2 transition-all cursor-pointer animate-fadeIn"
+            className="w-full h-14 rounded-2xl bg-emerald-600 hover:bg-emerald-500 active:scale-[0.99] text-white font-bold font-['Outfit'] text-sm shadow-lg shadow-emerald-600/35 flex items-center justify-center gap-2 transition-all cursor-pointer animate-fadeIn"
           >
+            <span className="material-symbols-outlined text-[18px]">verified</span>
             <span>Continue to Mastered</span>
             <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
           </button>
+        ) : executionResult && !executionResult.success ? (
+          /* When there is an active compilation/runtime error, instruct user to fix */
+          <div className="w-full h-14 rounded-2xl bg-rose-950/40 border border-rose-800/50 text-rose-300 font-bold font-['Outfit'] text-xs flex items-center justify-center gap-2 transition-all px-4 text-center">
+            <span className="material-symbols-outlined text-[18px] shrink-0">error</span>
+            <span>Fix compiler diagnostics above and re-run code to continue</span>
+          </div>
+        ) : executionResult && !isOutputMatching ? (
+          /* When executed with exit code 0 but output doesn't match expected */
+          <div className="w-full h-14 rounded-2xl bg-amber-950/30 border border-amber-800/40 text-amber-300 font-semibold font-['Outfit'] text-xs flex items-center justify-center gap-2 transition-all px-4 text-center">
+            <span className="material-symbols-outlined text-[18px] text-amber-400 shrink-0">warning</span>
+            <span>Output does not match expected output yet — check requirements & re-run</span>
+          </div>
+        ) : (
+          /* Fully revealed but code hasn't been run yet */
+          <div
+            className={`w-full h-14 rounded-2xl border flex items-center justify-center gap-2 text-xs font-['Outfit'] font-semibold transition-all px-4 text-center ${
+              isDark
+                ? 'bg-[#121622] border-[#262c3d] text-slate-400'
+                : 'bg-slate-100 border-slate-200 text-slate-500'
+            }`}
+          >
+            <span className="material-symbols-outlined text-[18px] text-indigo-400 shrink-0">play_circle</span>
+            <span>Run code to print expected output and unlock Mastered</span>
+          </div>
         )}
       </div>
     </div>
