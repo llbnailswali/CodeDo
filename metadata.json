@@ -1,6 +1,8 @@
 {
-  "name": "Empty Screen",
-  "description": "A clean, minimalist empty screen application.",
+  "name": "CodeDo - Kotlin Learning App",
+  "description": "Tactile gamified Android learning platform for Kotlin programming with interactive code challenges, lesson paths, and curriculum explorer.",
   "requestFramePermissions": [],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
 }
