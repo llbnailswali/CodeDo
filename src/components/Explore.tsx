@@ -11,6 +11,7 @@ interface ExploreStageProps {
   setExploreCardIndex: (index: number) => void;
   scrollToElement: (id: string, offset?: number) => void;
   onContinue: () => void;
+  tapToRevealEnabled?: boolean;
 }
 
 // Reveal steps:
@@ -26,6 +27,7 @@ export const Explore: React.FC<ExploreStageProps> = ({
   setExploreCardIndex,
   scrollToElement,
   onContinue,
+  tapToRevealEnabled = true,
 }) => {
   const totalCards = data.cards.length;
   // Step 0: title only
@@ -37,10 +39,8 @@ export const Explore: React.FC<ExploreStageProps> = ({
   // This prevents indicator buttons from fluctuating during smooth/programmatic scrolling
   const isProgrammaticScrollRef = useRef<boolean>(false);
   const programmaticTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const isUserScrollingRef = useRef<boolean>(false);
-  const userScrollTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-  const isFullyRevealed = revealStep >= maxRevealStep;
+  const isFullyRevealed = !tapToRevealEnabled || revealStep >= maxRevealStep;
 
   // Calculate exact offset so the example section is scrolled to sit JUST below the sticky indicator bar
   const getIndicatorBottomOffset = () => {
@@ -51,6 +51,7 @@ export const Explore: React.FC<ExploreStageProps> = ({
 
   // When user taps to continue: reveal indicator and example, highlight the relevant number, and scroll so example sits just below indicator
   const handleNextReveal = () => {
+    if (!tapToRevealEnabled) return;
     soundFX.playClick();
     if (revealStep < maxRevealStep) {
       const nextStep = revealStep + 1;
@@ -58,7 +59,6 @@ export const Explore: React.FC<ExploreStageProps> = ({
 
       // Lock programmatic scroll to prevent any scroll-based fluctuation
       isProgrammaticScrollRef.current = true;
-      isUserScrollingRef.current = false;
       if (programmaticTimerRef.current) clearTimeout(programmaticTimerRef.current);
 
       // Highlight the relevant button according to example number on tap
@@ -84,7 +84,6 @@ export const Explore: React.FC<ExploreStageProps> = ({
   const handleIndicatorClick = (idx: number) => {
     soundFX.playClick();
     isProgrammaticScrollRef.current = true;
-    isUserScrollingRef.current = false;
     if (programmaticTimerRef.current) clearTimeout(programmaticTimerRef.current);
 
     // If card has not yet been revealed, reveal up to that card immediately
@@ -110,7 +109,6 @@ export const Explore: React.FC<ExploreStageProps> = ({
   // When user clicks a card directly
   const handleCardClick = (idx: number) => {
     isProgrammaticScrollRef.current = true;
-    isUserScrollingRef.current = false;
     if (programmaticTimerRef.current) clearTimeout(programmaticTimerRef.current);
 
     setExploreCardIndex(idx);
@@ -120,18 +118,12 @@ export const Explore: React.FC<ExploreStageProps> = ({
     }, 400);
   };
 
-  // Keep the scrolling-highlight sync ONLY when the user manually scrolls the content (finger swipe / wheel)
+  // Keep the scrolling-highlight in sync whenever the content is scrolled
   useEffect(() => {
     const handleUserGesture = () => {
-      isUserScrollingRef.current = true;
+      // User manual interaction takes precedence over programmatic scroll lock
       isProgrammaticScrollRef.current = false;
       if (programmaticTimerRef.current) clearTimeout(programmaticTimerRef.current);
-      if (userScrollTimerRef.current) clearTimeout(userScrollTimerRef.current);
-
-      // Settle back to non-scrolling state after user stops dragging/wheeling
-      userScrollTimerRef.current = setTimeout(() => {
-        isUserScrollingRef.current = false;
-      }, 600);
     };
 
     const rootEl = document.getElementById('root');
@@ -147,40 +139,55 @@ export const Explore: React.FC<ExploreStageProps> = ({
     });
 
     let ticking = false;
+    const updateActiveCardOnScroll = () => {
+      if (isProgrammaticScrollRef.current) return;
+
+      // In non-tap mode (!tapToRevealEnabled), all cards are visible
+      const visibleCount = !tapToRevealEnabled ? totalCards : Math.min(revealStep, totalCards);
+      if (visibleCount <= 0) return;
+
+      const scrollTop =
+        window.pageYOffset ||
+        document.documentElement.scrollTop ||
+        document.body.scrollTop ||
+        (rootEl ? rootEl.scrollTop : 0);
+
+      const scrollHeight = Math.max(
+        document.documentElement.scrollHeight,
+        document.body.scrollHeight,
+        rootEl ? rootEl.scrollHeight : 0
+      );
+
+      const clientHeight =
+        window.innerHeight ||
+        document.documentElement.clientHeight ||
+        (rootEl ? rootEl.clientHeight : 0);
+
+      const isAtBottom = scrollHeight - scrollTop - clientHeight < 50;
+
+      if (isAtBottom) {
+        setExploreCardIndex(visibleCount - 1);
+        return;
+      }
+
+      const headerOffset = getIndicatorBottomOffset();
+      let matchedIdx = 0;
+      for (let i = visibleCount - 1; i >= 0; i--) {
+        const el = document.getElementById(`explore-card-${i}`);
+        if (!el) continue;
+        const rect = el.getBoundingClientRect();
+        if (rect.top <= headerOffset + 60) {
+          matchedIdx = i;
+          break;
+        }
+      }
+      setExploreCardIndex(matchedIdx);
+    };
+
     const handleScroll = () => {
       if (ticking) return;
       window.requestAnimationFrame(() => {
-        // ONLY sync highlight when user is manually scrolling the content!
-        if (!isProgrammaticScrollRef.current && isUserScrollingRef.current) {
-          const revealedCount = Math.min(revealStep, totalCards);
-          if (revealedCount > 0) {
-            const scrollContainer =
-              rootEl && rootEl.scrollHeight > rootEl.clientHeight ? rootEl : document.documentElement;
-            const isAtBottom =
-              scrollContainer.scrollHeight - scrollContainer.scrollTop - scrollContainer.clientHeight < 30;
-
-            if (isAtBottom) {
-              setExploreCardIndex(revealedCount - 1);
-            } else {
-              const headerOffset = getIndicatorBottomOffset();
-              let matchedIdx = -1;
-              for (let i = revealedCount - 1; i >= 0; i--) {
-                const el = document.getElementById(`explore-card-${i}`);
-                if (!el) continue;
-                const rect = el.getBoundingClientRect();
-                if (rect.top <= headerOffset + 40) {
-                  matchedIdx = i;
-                  break;
-                }
-              }
-              if (matchedIdx >= 0) {
-                setExploreCardIndex(matchedIdx);
-              } else {
-                setExploreCardIndex(0);
-              }
-            }
-          }
-        }
+        updateActiveCardOnScroll();
         ticking = false;
       });
       ticking = true;
@@ -188,7 +195,7 @@ export const Explore: React.FC<ExploreStageProps> = ({
 
     const handleScrollEnd = () => {
       isProgrammaticScrollRef.current = false;
-      isUserScrollingRef.current = false;
+      updateActiveCardOnScroll();
     };
 
     window.addEventListener('scroll', handleScroll, { passive: true });
@@ -197,6 +204,9 @@ export const Explore: React.FC<ExploreStageProps> = ({
       rootEl.addEventListener('scroll', handleScroll, { passive: true });
       rootEl.addEventListener('scrollend', handleScrollEnd, { passive: true });
     }
+
+    // Initial check on mount or when mode/step updates
+    updateActiveCardOnScroll();
 
     return () => {
       gestureTargets.forEach((target) => {
@@ -213,9 +223,8 @@ export const Explore: React.FC<ExploreStageProps> = ({
         rootEl.removeEventListener('scrollend', handleScrollEnd);
       }
       if (programmaticTimerRef.current) clearTimeout(programmaticTimerRef.current);
-      if (userScrollTimerRef.current) clearTimeout(userScrollTimerRef.current);
     };
-  }, [revealStep, totalCards, setExploreCardIndex]);
+  }, [revealStep, totalCards, tapToRevealEnabled, setExploreCardIndex]);
 
   return (
     <div
@@ -246,8 +255,8 @@ export const Explore: React.FC<ExploreStageProps> = ({
         </p>
       )}
 
-      {/* Sticky Indicator Navigation Bar - Shown after tap: revealStep >= 1 */}
-      {revealStep >= 1 && (
+      {/* Sticky Indicator Navigation Bar - Shown after tap or when tapToReveal is disabled */}
+      {(!tapToRevealEnabled || revealStep >= 1) && (
         <div
           id="explore-indicator-bar"
           className="sticky top-14 z-30 mb-2.5 py-0.5 flex justify-center w-full animate-fadeIn"
@@ -288,11 +297,11 @@ export const Explore: React.FC<ExploreStageProps> = ({
         </div>
       )}
 
-      {/* Progressive Example Cards - Shown after tap: starts just below the indicator section with minor spacing */}
-      {revealStep >= 1 && (
+      {/* Progressive Example Cards - Shown after tap or when tapToReveal is disabled */}
+      {(!tapToRevealEnabled || revealStep >= 1) && (
         <div className="space-y-4 mb-6">
           {data.cards.map((card, idx) => {
-            const isCardRevealed = revealStep >= 1 + idx;
+            const isCardRevealed = !tapToRevealEnabled || revealStep >= 1 + idx;
             if (!isCardRevealed) return null;
 
           return (

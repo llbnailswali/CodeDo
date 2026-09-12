@@ -1,7 +1,8 @@
-import { AppTheme, UserStats, UserMistake } from '../types';
+import { AppTheme, AppFontSize, UserStats, UserMistake } from '../types';
 
 const STATS_KEY = 'codedo_user_stats';
 const THEME_KEY = 'codedo_app_theme';
+const FONT_SIZE_KEY = 'codedo_font_size';
 const SOUND_KEY = 'codedo_sound_enabled';
 const TAP_TO_REVEAL_KEY = 'codedo_tap_to_reveal_enabled';
 const MISTAKES_KEY = 'codedo_user_mistakes';
@@ -43,6 +44,24 @@ export const StorageManager = {
   setTheme(theme: AppTheme): void {
     try {
       localStorage.setItem(THEME_KEY, theme);
+    } catch {
+      // ignore
+    }
+  },
+
+  getFontSize(): AppFontSize {
+    try {
+      const saved = localStorage.getItem(FONT_SIZE_KEY);
+      if (saved === 'small' || saved === 'medium' || saved === 'large') return saved;
+    } catch {
+      // ignore
+    }
+    return 'medium';
+  },
+
+  setFontSize(size: AppFontSize): void {
+    try {
+      localStorage.setItem(FONT_SIZE_KEY, size);
     } catch {
       // ignore
     }

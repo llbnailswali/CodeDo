@@ -154,10 +154,38 @@
 </div>
 </article>
 <!-- Sticky / Bottom-Anchored Next Question CTA Button -->
-<div class="mt-6 mb-2">
+<div class="mt-6 mb-2" id="bottom-cta-container">
 <button class="w-full h-[54px] rounded-xl flex items-center justify-center gap-2 text-white font-semibold tracking-wide text-sm bg-gradient-to-r from-[#4f46e5] to-[#6366f1] shadow-[0_8px_20px_rgba(79,70,229,0.35)] hover:shadow-[0_8px_24px_rgba(79,70,229,0.5)] active:scale-[0.99] transition-all" type="button">
 <span>Next Question</span>
 <span class="material-symbols-outlined text-[18px]">arrow_forward</span>
 </button>
 </div>
-</div></main></body></html>
+</div>
+<script>
+  (function() {
+    const optionsContainer = document.querySelector('div[role="radiogroup"]') || document.querySelector('.flex.flex-col.gap-2\\.5');
+    const answerButtons = optionsContainer ? optionsContainer.querySelectorAll('button') : [];
+    const bottomCta = document.getElementById('bottom-cta-container');
+
+    function scrollToBottom() {
+      requestAnimationFrame(() => {
+        setTimeout(() => {
+          if (bottomCta) {
+            bottomCta.scrollIntoView({ behavior: 'smooth', block: 'end' });
+          }
+          window.scrollTo({
+            top: Math.max(document.body.scrollHeight, document.documentElement.scrollHeight),
+            behavior: 'smooth'
+          });
+        }, 80);
+      });
+    }
+
+    answerButtons.forEach((btn) => {
+      btn.addEventListener('click', function() {
+        scrollToBottom();
+      });
+    });
+  })();
+</script>
+</main></body></html>

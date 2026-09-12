@@ -220,12 +220,39 @@
 </div>
 </div>
 <!-- Bottom CTA Container -->
-<div class="mt-6">
+<div class="mt-6" id="bottom-cta-container">
 <button class="w-full h-[54px] rounded-xl bg-gradient-to-r from-[#4f46e5] to-[#6366f1] text-white font-semibold text-sm tracking-wide shadow-lg shadow-indigo-600/35 hover:shadow-indigo-600/50 active:scale-[0.99] transition-all flex items-center justify-center gap-2" type="button">
 <span>Next Question</span>
 <span class="material-symbols-outlined text-[18px]">arrow_forward</span>
 </button>
 </div>
 </div>
+<script>
+  (function() {
+    const optionsContainer = document.querySelector('div[role="radiogroup"]') || document.querySelector('.flex.flex-col.gap-2\\.5');
+    const answerButtons = optionsContainer ? optionsContainer.querySelectorAll('button') : [];
+    const bottomCta = document.getElementById('bottom-cta-container');
+
+    function scrollToBottom() {
+      requestAnimationFrame(() => {
+        setTimeout(() => {
+          if (bottomCta) {
+            bottomCta.scrollIntoView({ behavior: 'smooth', block: 'end' });
+          }
+          window.scrollTo({
+            top: Math.max(document.body.scrollHeight, document.documentElement.scrollHeight),
+            behavior: 'smooth'
+          });
+        }, 80);
+      });
+    }
+
+    answerButtons.forEach((btn) => {
+      btn.addEventListener('click', function() {
+        scrollToBottom();
+      });
+    });
+  })();
+</script>
 </main>
 </body></html>

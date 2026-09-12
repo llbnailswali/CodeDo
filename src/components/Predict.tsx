@@ -13,6 +13,7 @@ interface PredictStageProps {
   onSelectOption: (qIdx: number, optId: string) => void;
   scrollToElement: (id: string, offset?: number) => void;
   onContinue: () => void;
+  tapToRevealEnabled?: boolean;
 }
 
 export const Predict: React.FC<PredictStageProps> = ({
@@ -26,6 +27,7 @@ export const Predict: React.FC<PredictStageProps> = ({
   onSelectOption,
   scrollToElement,
   onContinue,
+  tapToRevealEnabled = true,
 }) => {
   const totalQuestions = data.questions.length;
   const maxRevealStep = totalQuestions;
@@ -50,8 +52,8 @@ export const Predict: React.FC<PredictStageProps> = ({
   const allRevealedCorrect =
     revealStep === 0 ||
     Array.from({ length: revealStep }).every((_, i) => isQuestionCorrect(i));
-  const canContinue = allRevealedCorrect;
-  const isFullyRevealed = revealStep >= maxRevealStep;
+  const canContinue = !tapToRevealEnabled || allRevealedCorrect;
+  const isFullyRevealed = !tapToRevealEnabled || revealStep >= maxRevealStep;
   const allQuestionsCorrect = data.questions.every((_, idx) =>
     isQuestionCorrect(idx)
   );
@@ -63,8 +65,6 @@ export const Predict: React.FC<PredictStageProps> = ({
   // Refs for smooth scroll & user scroll detection without highlight fluctuation
   const isProgrammaticScrollRef = useRef<boolean>(false);
   const programmaticTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const isUserScrollingRef = useRef<boolean>(false);
-  const userScrollTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Calculate exact offset so the question section is scrolled to sit JUST below the sticky indicator bar
   const getIndicatorBottomOffset = () => {
@@ -101,7 +101,6 @@ export const Predict: React.FC<PredictStageProps> = ({
       const targetQuestionIdx = nextStep - 1;
 
       isProgrammaticScrollRef.current = true;
-      isUserScrollingRef.current = false;
       if (programmaticTimerRef.current) clearTimeout(programmaticTimerRef.current);
 
       setRevealStep(nextStep);
@@ -122,11 +121,10 @@ export const Predict: React.FC<PredictStageProps> = ({
 
   // When user directly taps an indicator button: highlight that question and scroll so it sits just below indicator
   const handleIndicatorClick = (idx: number) => {
-    // If idx is already revealed, allow navigating to it
-    if (idx < revealStep) {
+    // If in non-tap mode or idx is already revealed, allow navigating to it
+    if (!tapToRevealEnabled || idx < revealStep) {
       soundFX.playClick();
       isProgrammaticScrollRef.current = true;
-      isUserScrollingRef.current = false;
       if (programmaticTimerRef.current) clearTimeout(programmaticTimerRef.current);
 
       setActivePredictCardIdx(idx);
@@ -159,7 +157,6 @@ export const Predict: React.FC<PredictStageProps> = ({
   // When user clicks a card directly
   const handleCardClick = (idx: number) => {
     isProgrammaticScrollRef.current = true;
-    isUserScrollingRef.current = false;
     if (programmaticTimerRef.current) clearTimeout(programmaticTimerRef.current);
 
     setActivePredictCardIdx(idx);
@@ -169,17 +166,54 @@ export const Predict: React.FC<PredictStageProps> = ({
     }, 400);
   };
 
-  // Keep the scrolling-highlight sync ONLY when the user manually scrolls the content
+  // Scroll screen to bottom helper when an answer is selected
+  const scrollToBottom = () => {
+    isProgrammaticScrollRef.current = true;
+    if (programmaticTimerRef.current) clearTimeout(programmaticTimerRef.current);
+
+    // Double frame + small timeout ensures feedback drawer DOM has mounted and layout reflowed
+    requestAnimationFrame(() => {
+      setTimeout(() => {
+        const bottomAnchor = document.getElementById('predict-bottom-anchor');
+        if (bottomAnchor) {
+          bottomAnchor.scrollIntoView({ behavior: 'smooth', block: 'end' });
+        }
+
+        const rootEl = document.getElementById('root');
+        if (rootEl && rootEl.scrollHeight > rootEl.clientHeight) {
+          rootEl.scrollTo({ top: rootEl.scrollHeight, behavior: 'smooth' });
+        }
+
+        window.scrollTo({
+          top: Math.max(
+            document.body.scrollHeight,
+            document.documentElement.scrollHeight,
+            document.body.offsetHeight,
+            document.documentElement.offsetHeight
+          ),
+          behavior: 'smooth',
+        });
+
+        programmaticTimerRef.current = setTimeout(() => {
+          isProgrammaticScrollRef.current = false;
+        }, 750);
+      }, 100);
+    });
+  };
+
+  // When user selects an answer option
+  const handleSelectOption = (qIdx: number, optId: string) => {
+    setActivePredictCardIdx(qIdx);
+    onSelectOption(qIdx, optId);
+    scrollToBottom();
+  };
+
+  // Keep the scrolling-highlight in sync whenever the content is scrolled
   useEffect(() => {
     const handleUserGesture = () => {
-      isUserScrollingRef.current = true;
+      // User manual interaction takes precedence over programmatic scroll lock
       isProgrammaticScrollRef.current = false;
       if (programmaticTimerRef.current) clearTimeout(programmaticTimerRef.current);
-      if (userScrollTimerRef.current) clearTimeout(userScrollTimerRef.current);
-
-      userScrollTimerRef.current = setTimeout(() => {
-        isUserScrollingRef.current = false;
-      }, 600);
     };
 
     const rootEl = document.getElementById('root');
@@ -187,45 +221,63 @@ export const Predict: React.FC<PredictStageProps> = ({
     if (rootEl) gestureTargets.push(rootEl);
 
     gestureTargets.forEach((target) => {
-      target.addEventListener('wheel', handleUserGesture, { passive: true });
+      target.addEventListener('touchstart', handleUserGesture, { passive: true });
       target.addEventListener('touchmove', handleUserGesture, { passive: true });
+      target.addEventListener('wheel', handleUserGesture, { passive: true });
       target.addEventListener('pointerdown', handleUserGesture, { passive: true });
+      target.addEventListener('keydown', handleUserGesture as EventListener, { passive: true });
     });
 
     let ticking = false;
+    const updateActiveQuestionOnScroll = () => {
+      if (isProgrammaticScrollRef.current) return;
+
+      // In non-tap mode (!tapToRevealEnabled), all questions are visible
+      const visibleCount = !tapToRevealEnabled ? totalQuestions : Math.min(revealStep, totalQuestions);
+      if (visibleCount <= 0) return;
+
+      const scrollTop =
+        window.pageYOffset ||
+        document.documentElement.scrollTop ||
+        document.body.scrollTop ||
+        (rootEl ? rootEl.scrollTop : 0);
+
+      const scrollHeight = Math.max(
+        document.documentElement.scrollHeight,
+        document.body.scrollHeight,
+        rootEl ? rootEl.scrollHeight : 0
+      );
+
+      const clientHeight =
+        window.innerHeight ||
+        document.documentElement.clientHeight ||
+        (rootEl ? rootEl.clientHeight : 0);
+
+      const isAtBottom = scrollHeight - scrollTop - clientHeight < 50;
+
+      if (isAtBottom) {
+        setActivePredictCardIdx(visibleCount - 1);
+        return;
+      }
+
+      const headerOffset = getIndicatorBottomOffset();
+      let matchedIdx = 0;
+      for (let i = visibleCount - 1; i >= 0; i--) {
+        const el = document.getElementById(`predict-q-${i}`);
+        if (!el) continue;
+        const rect = el.getBoundingClientRect();
+        if (rect.top <= headerOffset + 60) {
+          matchedIdx = i;
+          break;
+        }
+      }
+      setActivePredictCardIdx(matchedIdx);
+    };
+
     const handleScroll = () => {
       if (ticking) return;
       window.requestAnimationFrame(() => {
-        if (!isProgrammaticScrollRef.current && isUserScrollingRef.current) {
-          const revealedCount = Math.min(revealStep, totalQuestions);
-          if (revealedCount > 0) {
-            const scrollContainer =
-              rootEl && rootEl.scrollHeight > rootEl.clientHeight ? rootEl : document.documentElement;
-            const isAtBottom =
-              scrollContainer.scrollHeight - scrollContainer.scrollTop - scrollContainer.clientHeight < 30;
-
-            if (isAtBottom) {
-              setActivePredictCardIdx(revealedCount - 1);
-            } else {
-              const topOffset = getIndicatorBottomOffset() + 30;
-              let closestIdx = 0;
-              let minDistance = Infinity;
-
-              for (let i = 0; i < revealedCount; i++) {
-                const el = document.getElementById(`predict-q-${i}`);
-                if (el) {
-                  const rect = el.getBoundingClientRect();
-                  const dist = Math.abs(rect.top - topOffset);
-                  if (dist < minDistance) {
-                    minDistance = dist;
-                    closestIdx = i;
-                  }
-                }
-              }
-              setActivePredictCardIdx(closestIdx);
-            }
-          }
-        }
+        updateActiveQuestionOnScroll();
         ticking = false;
       });
       ticking = true;
@@ -233,21 +285,26 @@ export const Predict: React.FC<PredictStageProps> = ({
 
     const handleScrollEnd = () => {
       isProgrammaticScrollRef.current = false;
-      isUserScrollingRef.current = false;
+      updateActiveQuestionOnScroll();
     };
 
     window.addEventListener('scroll', handleScroll, { passive: true });
-    window.addEventListener('scrollend', handleScrollEnd);
+    window.addEventListener('scrollend', handleScrollEnd, { passive: true });
     if (rootEl) {
       rootEl.addEventListener('scroll', handleScroll, { passive: true });
-      rootEl.addEventListener('scrollend', handleScrollEnd);
+      rootEl.addEventListener('scrollend', handleScrollEnd, { passive: true });
     }
+
+    // Initial check on mount or when mode/step updates
+    updateActiveQuestionOnScroll();
 
     return () => {
       gestureTargets.forEach((target) => {
-        target.removeEventListener('wheel', handleUserGesture);
+        target.removeEventListener('touchstart', handleUserGesture);
         target.removeEventListener('touchmove', handleUserGesture);
+        target.removeEventListener('wheel', handleUserGesture);
         target.removeEventListener('pointerdown', handleUserGesture);
+        target.removeEventListener('keydown', handleUserGesture as EventListener);
       });
       window.removeEventListener('scroll', handleScroll);
       window.removeEventListener('scrollend', handleScrollEnd);
@@ -256,9 +313,8 @@ export const Predict: React.FC<PredictStageProps> = ({
         rootEl.removeEventListener('scrollend', handleScrollEnd);
       }
       if (programmaticTimerRef.current) clearTimeout(programmaticTimerRef.current);
-      if (userScrollTimerRef.current) clearTimeout(userScrollTimerRef.current);
     };
-  }, [revealStep, totalQuestions, setActivePredictCardIdx]);
+  }, [revealStep, totalQuestions, tapToRevealEnabled, setActivePredictCardIdx]);
 
   return (
     <div
@@ -278,8 +334,8 @@ export const Predict: React.FC<PredictStageProps> = ({
         </h1>
       </section>
 
-      {/* Sticky Indicator Navigation Bar - Shown after tap: revealStep >= 1 */}
-      {revealStep >= 1 && (
+      {/* Sticky Indicator Navigation Bar - Shown after tap or when tapToReveal is disabled */}
+      {(!tapToRevealEnabled || revealStep >= 1) && (
         <div
           id="predict-indicator-bar"
           className="sticky top-14 z-30 mb-2.5 py-0.5 flex justify-center w-full animate-fadeIn"
@@ -297,7 +353,7 @@ export const Predict: React.FC<PredictStageProps> = ({
               const isHighlighted = activePredictCardIdx === idx;
               const isAnswered = isQuestionAnswered(idx);
               const isCorrect = isQuestionCorrect(idx);
-              const isRevealed = revealStep > idx;
+              const isRevealed = !tapToRevealEnabled || revealStep > idx;
               const isLocked = !isRevealed && (!canContinue || idx > revealStep);
 
               return (
@@ -344,11 +400,11 @@ export const Predict: React.FC<PredictStageProps> = ({
         </div>
       )}
 
-      {/* Progressive Prediction Question Cards - Shown after tap: starts just below the indicator section with minor spacing */}
-      {revealStep >= 1 && (
+      {/* Progressive Prediction Question Cards - Shown after tap or when tapToReveal is disabled */}
+      {(!tapToRevealEnabled || revealStep >= 1) && (
         <div className="space-y-4 mb-6">
           {data.questions.map((question, qIdx) => {
-            const isQuestionRevealed = revealStep >= 1 + qIdx;
+            const isQuestionRevealed = !tapToRevealEnabled || revealStep >= 1 + qIdx;
             if (!isQuestionRevealed) return null;
 
             const selectedOptId = predictAnswers[qIdx];
@@ -468,7 +524,7 @@ export const Predict: React.FC<PredictStageProps> = ({
                         type="button"
                         onClick={(e) => {
                           e.stopPropagation();
-                          onSelectOption(qIdx, opt.id);
+                          handleSelectOption(qIdx, opt.id);
                         }}
                         className={`w-full p-3.5 rounded-xl flex items-center justify-between text-left transition-all border cursor-pointer ${
                           isSelected
@@ -570,6 +626,7 @@ export const Predict: React.FC<PredictStageProps> = ({
 
       {/* Bottom CTA / Tap Hint */}
       <div
+        id="predict-bottom-cta"
         className={`sticky bottom-0 left-0 right-0 w-full pt-1.5 pb-2 transition-all ${
           isDark
             ? 'bg-gradient-to-t from-[#0f131d] via-[#0f131d]/95 to-transparent'
@@ -619,17 +676,17 @@ export const Predict: React.FC<PredictStageProps> = ({
         ) : (
           <button
             type="button"
-            disabled={!allQuestionsCorrect}
+            disabled={tapToRevealEnabled && !allQuestionsCorrect}
             onClick={(e) => {
               e.stopPropagation();
-              if (allQuestionsCorrect) {
+              if (!tapToRevealEnabled || allQuestionsCorrect) {
                 onContinue();
               } else {
                 scrollToUnsolved();
               }
             }}
             className={`w-full h-14 rounded-2xl font-['Outfit'] font-bold text-base flex items-center justify-center gap-2 transition-all ${
-              allQuestionsCorrect
+              !tapToRevealEnabled || allQuestionsCorrect
                 ? 'bg-indigo-600 hover:bg-indigo-700 active:scale-[0.99] text-white shadow-lg shadow-indigo-600/35 cursor-pointer animate-fadeIn'
                 : isDark
                 ? 'bg-[#171b26] border border-[#262c3d] text-slate-500 cursor-not-allowed opacity-60'
@@ -637,16 +694,19 @@ export const Predict: React.FC<PredictStageProps> = ({
             }`}
           >
             <span>
-              {allQuestionsCorrect
+              {!tapToRevealEnabled || allQuestionsCorrect
                 ? 'Continue to Write & Run'
                 : 'Select the correct answer to continue'}
             </span>
             <span className="material-symbols-outlined text-[20px]">
-              {allQuestionsCorrect ? 'arrow_forward' : 'lock'}
+              {!tapToRevealEnabled || allQuestionsCorrect ? 'arrow_forward' : 'lock'}
             </span>
           </button>
         )}
       </div>
+
+      {/* Non-sticky anchor at absolute end of view to reliably scroll screen to bottom */}
+      <div id="predict-bottom-anchor" className="h-2 w-full pointer-events-none" aria-hidden="true" />
     </div>
   );
 };
