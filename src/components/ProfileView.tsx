@@ -10,6 +10,8 @@ interface ProfileViewProps {
   onToggleTheme: () => void;
   soundEnabled: boolean;
   onToggleSound: () => void;
+  tapToRevealEnabled?: boolean;
+  onToggleTapToReveal?: () => void;
   onResetProgress: () => void;
 }
 
@@ -21,6 +23,8 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   onToggleTheme,
   soundEnabled,
   onToggleSound,
+  tapToRevealEnabled = true,
+  onToggleTapToReveal,
   onResetProgress,
 }) => {
   const isDark = theme === 'dark';
@@ -253,6 +257,51 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
             }`}
           >
             {soundEnabled ? 'ON' : 'MUTED'}
+          </div>
+        </button>
+
+        {/* Tap to View Content Toggle */}
+        <button
+          type="button"
+          onClick={() => {
+            soundFX.playClick();
+            onToggleTapToReveal?.();
+          }}
+          className={`w-full p-3 rounded-xl flex items-center justify-between transition-all border ${
+            isDark
+              ? 'bg-[#0f1422] border-white/5 hover:border-white/10'
+              : 'bg-slate-50/80 border-slate-200/80 hover:bg-slate-100'
+          }`}
+        >
+          <div className="flex items-center gap-3">
+            <div
+              className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+                tapToRevealEnabled
+                  ? 'bg-indigo-500/20 text-indigo-400'
+                  : isDark
+                  ? 'bg-slate-800 text-slate-400'
+                  : 'bg-slate-200 text-slate-600'
+              }`}
+            >
+              <span className="material-symbols-outlined text-[18px]">
+                {tapToRevealEnabled ? 'touch_app' : 'visibility'}
+              </span>
+            </div>
+            <div className="flex flex-col text-left">
+              <span className="font-['Outfit'] text-xs font-bold leading-tight">Tap to View Content</span>
+              <span className="font-mono text-[10px] text-slate-400">
+                {tapToRevealEnabled ? 'Reveal lesson sections step-by-step on tap' : 'Show all lesson content immediately'}
+              </span>
+            </div>
+          </div>
+          <div
+            className={`px-2 py-0.5 rounded-md font-mono text-[10px] font-bold ${
+              tapToRevealEnabled
+                ? 'bg-indigo-500/15 text-indigo-400 border border-indigo-500/30'
+                : 'bg-slate-200 dark:bg-slate-800 text-slate-500'
+            }`}
+          >
+            {tapToRevealEnabled ? 'ON' : 'OFF'}
           </div>
         </button>
       </div>

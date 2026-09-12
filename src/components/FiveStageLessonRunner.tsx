@@ -134,7 +134,7 @@ export const FiveStageLessonRunner: React.FC<FiveStageLessonRunnerProps> = ({
   const [learnRevealStep, setLearnRevealStep] = useState<number>(0);
   const [exploreRevealStep, setExploreRevealStep] = useState<number>(0);
   const [predictRevealStep, setPredictRevealStep] = useState<number>(0);
-  const [writeRunRevealStep, setWriteRunRevealStep] = useState<number>(0);
+  const [writeRunRevealStep, setWriteRunRevealStep] = useState<number>(3);
 
   // Predict state: support all questions, no default selected answer
   const [predictAnswers, setPredictAnswers] = useState<Record<number, string>>({});
@@ -192,77 +192,9 @@ export const FiveStageLessonRunner: React.FC<FiveStageLessonRunnerProps> = ({
     };
   }, [onExit]);
 
-  // Sync scroll position with Step 2 (Explore) example chips
-  useEffect(() => {
-    if (currentStage !== 2) return;
-    let ticking = false;
-    const handleScroll = () => {
-      if (!ticking) {
-        window.requestAnimationFrame(() => {
-          const cards = lessonData.explore.cards;
-          const rootEl = document.getElementById('root');
-          const currentScroll = rootEl && rootEl.scrollTop > 0 ? rootEl.scrollTop : (window.scrollY || document.documentElement.scrollTop || 0);
-          const scrollPos = currentScroll + 140;
-          for (let i = cards.length - 1; i >= 0; i--) {
-            const el = document.getElementById(`explore-card-${i}`);
-            if (el && el.offsetTop <= scrollPos) {
-              setExploreCardIndex((prev) => (prev !== i ? i : prev));
-              break;
-            }
-          }
-          ticking = false;
-        });
-        ticking = true;
-      }
-    };
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    const rootEl = document.getElementById('root');
-    if (rootEl) {
-      rootEl.addEventListener('scroll', handleScroll, { passive: true });
-    }
-    return () => {
-      window.removeEventListener('scroll', handleScroll);
-      if (rootEl) {
-        rootEl.removeEventListener('scroll', handleScroll);
-      }
-    };
-  }, [currentStage, lessonData.explore.cards]);
-
-  // Sync scroll position with Step 3 (Predict) question chips
-  useEffect(() => {
-    if (currentStage !== 3) return;
-    let ticking = false;
-    const handleScroll = () => {
-      if (!ticking) {
-        window.requestAnimationFrame(() => {
-          const questions = lessonData.predict.questions;
-          const rootEl = document.getElementById('root');
-          const currentScroll = rootEl && rootEl.scrollTop > 0 ? rootEl.scrollTop : (window.scrollY || document.documentElement.scrollTop || 0);
-          const scrollPos = currentScroll + 140;
-          for (let i = questions.length - 1; i >= 0; i--) {
-            const el = document.getElementById(`predict-q-${i}`);
-            if (el && el.offsetTop <= scrollPos) {
-              setActivePredictCardIdx((prev) => (prev !== i ? i : prev));
-              break;
-            }
-          }
-          ticking = false;
-        });
-        ticking = true;
-      }
-    };
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    const rootEl = document.getElementById('root');
-    if (rootEl) {
-      rootEl.addEventListener('scroll', handleScroll, { passive: true });
-    }
-    return () => {
-      window.removeEventListener('scroll', handleScroll);
-      if (rootEl) {
-        rootEl.removeEventListener('scroll', handleScroll);
-      }
-    };
-  }, [currentStage, lessonData.predict.questions]);
+  // Note: Stage 2 (Explore) and Stage 3 (Predict) indicator highlighting and scroll sync
+  // are managed directly inside their respective components to avoid fluctuation during
+  // tap-to-continue programmatic scrolls and only sync when user manually scrolls.
 
   const handleNextStage = () => {
     soundFX.playClick();
@@ -294,10 +226,7 @@ export const FiveStageLessonRunner: React.FC<FiveStageLessonRunnerProps> = ({
   };
 
   const handleRunCode = () => {
-    soundFX.playClick();
     setHasRunCode(true);
-    setActualOutput(lessonData.writeRun.expectedOutput);
-    soundFX.playSuccess();
   };
 
   const handleSelectPredictOption = (qIdx: number, optId: string) => {
@@ -477,6 +406,7 @@ export const FiveStageLessonRunner: React.FC<FiveStageLessonRunnerProps> = ({
             hasRunCode={hasRunCode}
             setHasRunCode={setHasRunCode}
             actualOutput={actualOutput}
+            setActualOutput={setActualOutput}
             onRunCode={handleRunCode}
             onContinue={handleNextStage}
           />

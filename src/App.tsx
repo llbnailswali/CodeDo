@@ -34,6 +34,7 @@ export default function App() {
   const [activeQuestionPool, setActiveQuestionPool] = useState<LessonQuestion[]>(LESSON_QUESTIONS);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState<number>(1); // Question 2 (Step 2 of 5: val x = 10, val y = 20)
   const [soundEnabled, setSoundEnabled] = useState<boolean>(() => StorageManager.getSoundEnabled());
+  const [tapToRevealEnabled, setTapToRevealEnabled] = useState<boolean>(() => StorageManager.getTapToRevealEnabled());
 
   // User Stats loaded from storage with daily reset check
   const [userStats, setUserStats] = useState<UserStats>(() => StorageManager.getUserStats());
@@ -76,6 +77,14 @@ export default function App() {
       const next = !prev;
       soundFX.enabled = next;
       StorageManager.setSoundEnabled(next);
+      return next;
+    });
+  };
+
+  const toggleTapToReveal = () => {
+    setTapToRevealEnabled((prev) => {
+      const next = !prev;
+      StorageManager.setTapToRevealEnabled(next);
       return next;
     });
   };
@@ -208,6 +217,8 @@ export default function App() {
                 setFiveStageLessonKey(null);
               }}
               onToggleTheme={toggleTheme}
+              tapToRevealEnabled={tapToRevealEnabled}
+              onToggleTapToReveal={toggleTapToReveal}
             />
           ) : isLessonActive ? (
             /* Active Challenge / Drill View */
@@ -257,6 +268,8 @@ export default function App() {
               onToggleTheme={toggleTheme}
               soundEnabled={soundEnabled}
               onToggleSound={toggleSound}
+              tapToRevealEnabled={tapToRevealEnabled}
+              onToggleTapToReveal={toggleTapToReveal}
               onResetProgress={handleResetProgress}
             />
           )}
