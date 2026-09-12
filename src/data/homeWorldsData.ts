@@ -17,13 +17,97 @@ export interface WorldTopicSection {
   totalCount: number;
   percentage: number;
   nodes: WorldTopicNode[];
+  description?: string;
+  icon?: string;
+  badge?: string;
 }
+
+export interface WorldCardMeta {
+  tagline: string;
+  icon: string;
+  badge: string;
+  gradient: string;
+  accentColor: string;
+}
+
+export const WORLD_CARD_META: Record<string, WorldCardMeta> = {
+  'world-1': {
+    tagline: 'val vs var, type inference, immutability rules & math',
+    icon: 'data_object',
+    badge: 'FOUNDATIONS',
+    gradient: 'from-blue-600 to-indigo-600',
+    accentColor: '#3748dd',
+  },
+  'world-2': {
+    tagline: 'Booleans, conditional expressions, when matching engine & truth tables',
+    icon: 'alt_route',
+    badge: 'LOGIC',
+    gradient: 'from-violet-600 to-purple-600',
+    accentColor: '#8b5cf6',
+  },
+  'world-3': {
+    tagline: 'For-loops, ranges, progressions, while conditions & 2D grid matrix',
+    icon: 'sync',
+    badge: 'LOOPS',
+    gradient: 'from-emerald-600 to-teal-600',
+    accentColor: '#10b981',
+  },
+  'world-4': {
+    tagline: 'Function declarations, named & default args, single-expression syntax',
+    icon: 'code',
+    badge: 'FUNCTIONS',
+    gradient: 'from-cyan-600 to-blue-600',
+    accentColor: '#06b6d4',
+  },
+  'world-5': {
+    tagline: 'Classes, primary constructors, data classes copy(), inheritance & interfaces',
+    icon: 'category',
+    badge: 'OOP',
+    gradient: 'from-amber-600 to-orange-600',
+    accentColor: '#f59e0b',
+  },
+  'world-6': {
+    tagline: 'Lists, Sets, Maps, filter, map, flatMap and functional streams',
+    icon: 'filter_list',
+    badge: 'COLLECTIONS',
+    gradient: 'from-pink-600 to-rose-600',
+    accentColor: '#ec4899',
+  },
+  'world-7': {
+    tagline: 'Type parameters <T>, Elvis operator ?:, smart casts & sealed classes',
+    icon: 'verified_user',
+    badge: 'GENERICS',
+    gradient: 'from-sky-600 to-indigo-600',
+    accentColor: '#0ea5e9',
+  },
+  'world-8': {
+    tagline: 'Suspend functions, dispatchers, async/await and structured concurrency',
+    icon: 'bolt',
+    badge: 'COROUTINES',
+    gradient: 'from-purple-600 to-violet-600',
+    accentColor: '#9333ea',
+  },
+  'world-9': {
+    tagline: 'Declarative composables, remember & mutableStateOf, layout modifiers',
+    icon: 'palette',
+    badge: 'COMPOSE UI',
+    gradient: 'from-fuchsia-600 to-pink-600',
+    accentColor: '#d946ef',
+  },
+  'world-10': {
+    tagline: 'Clean architecture, MVVM, ViewModel, StateFlow & production capstone',
+    icon: 'account_tree',
+    badge: 'ARCHITECTURE',
+    gradient: 'from-amber-500 to-yellow-600',
+    accentColor: '#eab308',
+  },
+};
 
 export const HOME_WORLDS: WorldTopicSection[] = [
   {
     worldNumber: 1,
     worldId: 'world-1',
-    topicTitle: 'Variables & Immutability',
+    topicTitle: 'Kotlin Foundations',
     completedCount: 1,
     totalCount: 6,
     percentage: 17,
