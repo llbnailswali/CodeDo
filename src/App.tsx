@@ -37,6 +37,16 @@ export default function App() {
 
   // User Stats loaded from storage with daily reset check
   const [userStats, setUserStats] = useState<UserStats>(() => StorageManager.getUserStats());
+  const [curriculumWorldId, setCurriculumWorldId] = useState<string>('world-1');
+
+  // Open Curriculum Map with optional target world
+  const handleOpenCurriculum = (worldId?: string) => {
+    soundFX.playClick();
+    if (worldId) {
+      setCurriculumWorldId(worldId);
+    }
+    setActiveTab('curriculum');
+  };
 
   // Sync sound setting with soundFX utility
   useEffect(() => {
@@ -157,7 +167,7 @@ export default function App() {
   };
 
   return (
-    <div className={`min-h-screen w-full flex flex-col relative transition-colors duration-300 ${
+    <div className={`min-h-full min-h-screen w-full flex flex-col relative transition-colors duration-300 ${
       theme === 'dark' ? 'bg-[#0b0f19] text-[#dfe2f1]' : 'bg-[#f8f9fb] text-[#191c1e]'
     }`}>
         {/* Top Header */}
@@ -212,26 +222,18 @@ export default function App() {
             /* Curriculum Explorer View (Unrestricted dynamic core topic worlds) */
             <CurriculumExplorer
               theme={theme}
+              initialWorldId={curriculumWorldId}
               onJumpToToday={() => setActiveTab('learn')}
               onStartLesson={(topic) => setFiveStageLessonKey(topic || 'variables')}
             />
           ) : activeTab === 'learn' ? (
-            /* Main Learning Odyssey Path */
+            /* Main Learning Odyssey Path: Worlds-only landing page */
             <LearnView
               theme={theme}
               userStats={userStats}
               onStartLesson={() => setFiveStageLessonKey('variables')}
-              onOpenCurriculum={() => setActiveTab('curriculum')}
-              onSelectNode={(nodeTitle) => {
-                const lower = nodeTitle.toLowerCase();
-                if (lower.includes('function')) {
-                  setFiveStageLessonKey('functions');
-                } else if (lower.includes('loop')) {
-                  setFiveStageLessonKey('loops');
-                } else {
-                  setFiveStageLessonKey('variables');
-                }
-              }}
+              onOpenCurriculum={handleOpenCurriculum}
+              onSelectWorld={handleOpenCurriculum}
             />
           ) : activeTab === 'practice' ? (
             /* Practice & Code Sandbox */
@@ -251,7 +253,7 @@ export default function App() {
               theme={theme}
               userStats={userStats}
               onStartLesson={() => setFiveStageLessonKey('variables')}
-              onOpenCurriculum={() => setActiveTab('curriculum')}
+              onOpenCurriculum={() => handleOpenCurriculum('world-1')}
               onToggleTheme={toggleTheme}
               soundEnabled={soundEnabled}
               onToggleSound={toggleSound}
