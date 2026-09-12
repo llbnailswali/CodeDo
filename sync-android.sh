@@ -1,8 +1,7 @@
 #!/bin/bash
-# Commits and pushes any local changes, pulls the latest code, refreshes the
-# Android project, then builds a debug APK and installs + launches it on the
-# connected device -- so running this alone is enough to see the latest
-# changes (from here or elsewhere, e.g. AI Studio) on your phone.
+# Pulls the latest code, refreshes the Android project, then builds a debug
+# APK and installs + launches it on the connected device -- so running this
+# alone is enough to see the latest AI Studio changes on your phone.
 #
 # Usage (from Android Studio's Terminal, which opens inside android/):
 #   ../sync-android.sh
@@ -12,15 +11,6 @@
 set -e  # stop immediately if any step fails, instead of silently continuing
 
 cd "$(dirname "$0")"
-
-echo "==> git add & commit & push (local changes)"
-git add -A
-if git diff --cached --quiet; then
-  echo "    no local changes to commit"
-else
-  git commit -m "chore: sync local changes $(date '+%Y-%m-%d %H:%M:%S')"
-  git push origin main
-fi
 
 echo "==> git pull"
 git pull origin main
