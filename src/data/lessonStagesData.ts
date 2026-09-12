@@ -45,6 +45,7 @@ export interface PredictQuestion {
   questionNumber: number;
   totalQuestions: number;
   topicMeta: string;
+  title?: string;
   language: string;
   code: string[];
   prompt: string;
@@ -57,7 +58,7 @@ export interface PredictQuestion {
 
 export interface Stage3PredictData {
   title: string;
-  subtitle: string;
+  subtitle?: string;
   questions: PredictQuestion[];
 }
 
@@ -269,6 +270,7 @@ export const FUNCTIONS_LESSON: FiveStageLesson = {
         id: 'pred-func-1',
         questionNumber: 1,
         totalQuestions: 5,
+        title: 'Kotlin Functions',
         topicMeta: 'Kotlin Functions',
         language: 'Kotlin',
         code: [
@@ -294,6 +296,7 @@ export const FUNCTIONS_LESSON: FiveStageLesson = {
         id: 'pred-func-2',
         questionNumber: 2,
         totalQuestions: 5,
+        title: 'Parameters & Templates',
         topicMeta: 'Parameters & Templates',
         language: 'Kotlin',
         code: [
@@ -301,7 +304,7 @@ export const FUNCTIONS_LESSON: FiveStageLesson = {
           '    println("Welcome, $user")',
           '}',
           '',
-          'welcome("Dev")'
+          'welcome("Dev")',
         ],
         prompt: 'What will be displayed in the terminal?',
         options: [
@@ -313,6 +316,83 @@ export const FUNCTIONS_LESSON: FiveStageLesson = {
         explanation: {
           codeRef: 'welcome("Dev")',
           detail: 'The string template "$user" interpolates the argument "Dev" directly into the message.'
+        }
+      },
+      {
+        id: 'pred-func-3',
+        questionNumber: 3,
+        totalQuestions: 5,
+        title: 'Return Values',
+        topicMeta: 'Return Values',
+        language: 'Kotlin',
+        code: [
+          'fun add(a: Int, b: Int): Int {',
+          '    return a + b',
+          '}',
+          '',
+          'val sum = add(4, 6)',
+          'println("Sum is $sum")'
+        ],
+        prompt: 'What will this code print to the console?',
+        options: [
+          { id: 'A', label: 'Sum is 10', isCorrect: true },
+          { id: 'B', label: 'Sum is 46', isCorrect: false },
+          { id: 'C', label: 'Sum is Unit', isCorrect: false },
+          { id: 'D', label: 'Compilation Error', isCorrect: false }
+        ],
+        explanation: {
+          codeRef: 'add(4, 6)',
+          detail: 'add(4, 6) returns 10, which is stored in sum and interpolated as "Sum is 10".'
+        }
+      },
+      {
+        id: 'pred-func-4',
+        questionNumber: 4,
+        totalQuestions: 5,
+        title: 'Single-Expression Syntax',
+        topicMeta: 'Single-Expression Syntax',
+        language: 'Kotlin',
+        code: [
+          'fun square(n: Int) = n * n',
+          '',
+          'println(square(5))'
+        ],
+        prompt: 'What does this single-expression function output?',
+        options: [
+          { id: 'A', label: '10', isCorrect: false },
+          { id: 'B', label: '25', isCorrect: true },
+          { id: 'C', label: '5', isCorrect: false },
+          { id: 'D', label: 'Nothing', isCorrect: false }
+        ],
+        explanation: {
+          codeRef: 'n * n',
+          detail: 'Kotlin single-expression functions return the evaluated value directly, so 5 * 5 = 25.'
+        }
+      },
+      {
+        id: 'pred-func-5',
+        questionNumber: 5,
+        totalQuestions: 5,
+        title: 'Default Arguments',
+        topicMeta: 'Default Arguments',
+        language: 'Kotlin',
+        code: [
+          'fun tag(item: String, prefix: String = "#"): String {',
+          '    return "$prefix$item"',
+          '}',
+          '',
+          'println(tag("kotlin"))'
+        ],
+        prompt: 'What is the resulting output?',
+        options: [
+          { id: 'A', label: '#kotlin', isCorrect: true },
+          { id: 'B', label: 'kotlin', isCorrect: false },
+          { id: 'C', label: 'Compilation Error: Missing argument', isCorrect: false },
+          { id: 'D', label: '$prefix$item', isCorrect: false }
+        ],
+        explanation: {
+          codeRef: 'prefix: String = "#"',
+          detail: 'Since prefix defaults to "#", calling tag("kotlin") evaluates to "#kotlin".'
         }
       }
     ]
@@ -642,8 +722,8 @@ export const VARIABLES_LESSON: FiveStageLesson = {
       'Prefer val over var. Immutability makes your code thread-safe, robust, and clean.'
   },
   explore: {
-    title: 'Variables: The Spectrum',
-    subtitle: '5 Progressive Examples • Step 2 of 5',
+    title: '5 progressive examples',
+    subtitle: '',
     cards: [
       {
         id: 'card-1',
@@ -735,12 +815,11 @@ export const VARIABLES_LESSON: FiveStageLesson = {
   },
   predict: {
     title: 'Predict Output',
-    subtitle: 'Output Forecasting • Step 3 of 5',
     questions: [
       {
         id: 'q1',
         questionNumber: 1,
-        totalQuestions: 1,
+        totalQuestions: 5,
         topicMeta: 'VAL VS VAR & TEMPLATES',
         language: 'kotlin',
         code: [
@@ -760,6 +839,104 @@ export const VARIABLES_LESSON: FiveStageLesson = {
           codeRef: 'score += 15',
           detail:
             'score is declared with var, so adding 15 updates the value to 25. player is declared with val and remains "Kora". The string template interpolates both values into "Kora: 25 pts".'
+        }
+      },
+      {
+        id: 'q2',
+        questionNumber: 2,
+        totalQuestions: 5,
+        topicMeta: 'IMMUTABILITY ENFORCEMENT',
+        language: 'kotlin',
+        code: [
+          'val maxRetries = 3',
+          'maxRetries = 5',
+          'println(maxRetries)'
+        ],
+        prompt: 'What happens when compiling and executing this code snippet?',
+        options: [
+          { id: 'A', label: '5', isCorrect: false },
+          { id: 'B', label: '3', isCorrect: false },
+          { id: 'C', label: 'Compilation Error: Val cannot be reassigned', isCorrect: true },
+          { id: 'D', label: 'Runtime Exception', isCorrect: false }
+        ],
+        explanation: {
+          codeRef: 'maxRetries = 5',
+          detail:
+            'Variables declared with val are read-only and immutable. Attempting to reassign maxRetries causes a compile error: "Val cannot be reassigned".'
+        }
+      },
+      {
+        id: 'q3',
+        questionNumber: 3,
+        totalQuestions: 5,
+        topicMeta: 'TYPE SAFETY & STATIC TYPING',
+        language: 'kotlin',
+        code: [
+          'var health = 100',
+          'health = "Full"',
+          'println(health)'
+        ],
+        prompt: 'What is the outcome of attempting to reassign health?',
+        options: [
+          { id: 'A', label: 'Full', isCorrect: false },
+          { id: 'B', label: 'Compilation Error: Type mismatch: inferred type String but Int expected', isCorrect: true },
+          { id: 'C', label: '100', isCorrect: false },
+          { id: 'D', label: 'Runtime Error: ClassCastException', isCorrect: false }
+        ],
+        explanation: {
+          codeRef: 'health = "Full"',
+          detail:
+            'Kotlin uses static typing. Because health is initialized with 100, its type is inferred as Int. Even though it is a mutable var, you cannot assign a String to an Int.'
+        }
+      },
+      {
+        id: 'q4',
+        questionNumber: 4,
+        totalQuestions: 5,
+        topicMeta: 'STRING TEMPLATE EXPRESSIONS',
+        language: 'kotlin',
+        code: [
+          'val count = 4',
+          'val cost = 5',
+          'println("Total: $${count * cost}")'
+        ],
+        prompt: 'What does this program print to stdout?',
+        options: [
+          { id: 'A', label: 'Total: $20', isCorrect: true },
+          { id: 'B', label: 'Total: ${count * cost}', isCorrect: false },
+          { id: 'C', label: 'Total: $ count * cost', isCorrect: false },
+          { id: 'D', label: 'Compilation Error', isCorrect: false }
+        ],
+        explanation: {
+          codeRef: '${count * cost}',
+          detail:
+            'The first $ is treated as a literal dollar sign, and ${count * cost} evaluates the expression 4 * 5 = 20, resulting in "Total: $20".'
+        }
+      },
+      {
+        id: 'q5',
+        questionNumber: 5,
+        totalQuestions: 5,
+        topicMeta: 'VARIABLE ARITHMETIC',
+        language: 'kotlin',
+        code: [
+          'val base = 5',
+          'var multiplier = 3',
+          'multiplier += 2',
+          'val result = base * multiplier',
+          'println("Result: $result")'
+        ],
+        prompt: 'What is the final console output of this calculation?',
+        options: [
+          { id: 'A', label: 'Result: 15', isCorrect: false },
+          { id: 'B', label: 'Result: 25', isCorrect: true },
+          { id: 'C', label: 'Result: 10', isCorrect: false },
+          { id: 'D', label: 'Result: base * 5', isCorrect: false }
+        ],
+        explanation: {
+          codeRef: 'multiplier += 2',
+          detail:
+            'multiplier is incremented from 3 to 5. Then base (5) * multiplier (5) yields 25, so println prints "Result: 25".'
         }
       }
     ]
