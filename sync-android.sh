@@ -1,12 +1,7 @@
 #!/bin/bash
-# Builds the app (npm run build + npx cap sync), builds the Android debug
-# APK, and installs + launches it on the connected device.
-#
-# Note: this no longer touches git at all -- deciding which of the 3 repos
-# (CodeDoJoyFull, CodeDo, CodeDoInspiro) is newest, pulling code between
-# them, and committing/pushing is now handled by the repo-sync-dashboard
-# (see /Users/apple/Desktop/PersonalProjects/repo-sync-dashboard). Run this
-# script after using the dashboard, just to build/install its result.
+# Pulls the latest code, refreshes the Android project, then builds a debug
+# APK and installs + launches it on the connected device -- so running this
+# alone is enough to see the latest AI Studio changes on your phone.
 #
 # Usage (from Android Studio's Terminal, which opens inside android/):
 #   ../sync-android.sh
@@ -16,6 +11,9 @@
 set -e  # stop immediately if any step fails, instead of silently continuing
 
 cd "$(dirname "$0")"
+
+echo "==> git pull"
+git pull origin main
 
 echo "==> npm run build"
 npm run build

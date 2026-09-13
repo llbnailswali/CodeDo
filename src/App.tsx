@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { AppTheme, AppFontSize, LessonQuestion, TabType, UserStats } from './types';
+import { AppTheme, LessonQuestion, TabType, UserStats } from './types';
 import {
   ALL_CURRICULUM_QUESTIONS,
   DAILY_BATTLE_POOL,
@@ -28,14 +28,12 @@ import { FiveStageLessonRunner } from './components/FiveStageLessonRunner';
 
 export default function App() {
   const [theme, setTheme] = useState<AppTheme>(() => StorageManager.getTheme());
-  const [fontSize, setFontSize] = useState<AppFontSize>(() => StorageManager.getFontSize());
   const [activeTab, setActiveTab] = useState<TabType>('learn');
   const [isLessonActive, setIsLessonActive] = useState<boolean>(false);
   const [fiveStageLessonKey, setFiveStageLessonKey] = useState<string | null>(null);
   const [activeQuestionPool, setActiveQuestionPool] = useState<LessonQuestion[]>(LESSON_QUESTIONS);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState<number>(1); // Question 2 (Step 2 of 5: val x = 10, val y = 20)
   const [soundEnabled, setSoundEnabled] = useState<boolean>(() => StorageManager.getSoundEnabled());
-  const [tapToRevealEnabled, setTapToRevealEnabled] = useState<boolean>(() => StorageManager.getTapToRevealEnabled());
 
   // User Stats loaded from storage with daily reset check
   const [userStats, setUserStats] = useState<UserStats>(() => StorageManager.getUserStats());
@@ -65,19 +63,6 @@ export default function App() {
     StorageManager.setTheme(theme);
   }, [theme]);
 
-  // Sync font size class and data-attribute on root element for app-wide font scaling
-  useEffect(() => {
-    document.documentElement.classList.remove('font-size-small', 'font-size-medium', 'font-size-large');
-    document.documentElement.classList.add(`font-size-${fontSize}`);
-    document.documentElement.setAttribute('data-font-size', fontSize);
-    StorageManager.setFontSize(fontSize);
-  }, [fontSize]);
-
-  const handleSetFontSize = (newSize: AppFontSize) => {
-    setFontSize(newSize);
-    StorageManager.setFontSize(newSize);
-  };
-
   const toggleTheme = () => {
     setTheme((prev) => {
       const next = prev === 'dark' ? 'light' : 'dark';
@@ -91,14 +76,6 @@ export default function App() {
       const next = !prev;
       soundFX.enabled = next;
       StorageManager.setSoundEnabled(next);
-      return next;
-    });
-  };
-
-  const toggleTapToReveal = () => {
-    setTapToRevealEnabled((prev) => {
-      const next = !prev;
-      StorageManager.setTapToRevealEnabled(next);
       return next;
     });
   };
@@ -220,7 +197,7 @@ export default function App() {
         {/* Screen Switcher */}
         <main className="flex-1 w-full flex flex-col">
           {fiveStageLessonKey ? (
-            /* 6-Stage Interactive Lesson Flow (Learn -> Explore -> Predict -> Write & Run -> Debug -> Mastered) */
+            /* 5-Stage Interactive Lesson Flow (Learn -> Explore -> Predict -> Write & Run -> Mastered) */
             <FiveStageLessonRunner
               theme={theme}
               initialLessonKey={fiveStageLessonKey}
@@ -231,8 +208,6 @@ export default function App() {
                 setFiveStageLessonKey(null);
               }}
               onToggleTheme={toggleTheme}
-              tapToRevealEnabled={tapToRevealEnabled}
-              onToggleTapToReveal={toggleTapToReveal}
             />
           ) : isLessonActive ? (
             /* Active Challenge / Drill View */
@@ -276,16 +251,12 @@ export default function App() {
             /* User Profile & Settings */
             <ProfileView
               theme={theme}
-              fontSize={fontSize}
-              onSetFontSize={handleSetFontSize}
               userStats={userStats}
               onStartLesson={() => setFiveStageLessonKey('variables')}
               onOpenCurriculum={() => handleOpenCurriculum('world-1')}
               onToggleTheme={toggleTheme}
               soundEnabled={soundEnabled}
               onToggleSound={toggleSound}
-              tapToRevealEnabled={tapToRevealEnabled}
-              onToggleTapToReveal={toggleTapToReveal}
               onResetProgress={handleResetProgress}
             />
           )}

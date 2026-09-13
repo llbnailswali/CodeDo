@@ -13,56 +13,47 @@ export const Navigation: React.FC<NavigationProps> = ({
   activeTab,
   onSelectTab,
 }) => {
+  const isDark = theme === 'dark';
+
   const tabs = [
     { id: 'learn' as TabType, label: 'Learn', icon: 'school' },
-    { id: 'practice' as TabType, label: 'Practice', icon: 'extension' },
-    { id: 'leaderboard' as TabType, label: 'Rankings', icon: 'emoji_events' },
+    { id: 'practice' as TabType, label: 'Practice', icon: 'code' },
+    { id: 'leaderboard' as TabType, label: 'League', icon: 'leaderboard' },
     { id: 'profile' as TabType, label: 'Profile', icon: 'account_circle' },
   ];
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-40 pointer-events-none pb-2">
-      <div className="px-4 pb-2 pt-1 max-w-md mx-auto">
-        <div
-          className={`pointer-events-auto h-16 w-full rounded-full flex items-center justify-between transition-all duration-200 ${
-            theme === 'dark'
-              ? 'bg-[#101626]/95 border border-white/10 backdrop-blur-xl shadow-[0_12px_32px_rgba(0,0,0,0.8)] px-2'
-              : 'bg-[#f8f9fb]/95 backdrop-blur-xl rounded-full neumorph-raised px-1.5'
-          }`}
-        >
-          {tabs.map((tab) => {
-            const isActive = activeTab === tab.id;
-            return (
-              <button
-                key={tab.id}
-                onClick={() => {
-                  soundFX.playClick();
-                  onSelectTab(tab.id);
-                }}
-                className={`flex-1 h-12 rounded-full flex flex-col items-center justify-center transition-all duration-200 ${
-                  isActive
-                    ? theme === 'dark'
-                      ? 'bg-indigo-500/20 text-white border border-indigo-500/40 shadow-[0_0_12px_rgba(99,102,241,0.35)]'
-                      : 'bg-[#3748dd]/10 text-[#3748dd] font-semibold neumorph-active-pill'
-                    : theme === 'dark'
-                    ? 'text-[#94a3b8] hover:text-white'
-                    : 'text-[#454655] hover:text-[#191c1e]'
-                }`}
-              >
-                <span
-                  className={`material-symbols-outlined text-[20px] transition-transform ${
-                    isActive ? 'scale-110' : ''
-                  } ${isActive && theme === 'dark' ? 'text-indigo-300 drop-shadow-[0_0_6px_rgba(165,180,252,0.8)]' : ''}`}
-                >
-                  {tab.icon}
-                </span>
-                <span className="font-['Outfit'] text-[10px] font-bold mt-0.5 tracking-wider uppercase">
-                  {tab.label}
-                </span>
-              </button>
-            );
-          })}
-        </div>
+    <nav
+      className={`fixed bottom-0 inset-x-0 z-50 pb-safe backdrop-blur-xl neu-nav border-t transition-colors duration-200 ${
+        isDark ? 'bg-[#0b0f19]/95 border-white/10' : 'bg-[#e8eaf0]/95 border-white/50'
+      }`}
+    >
+      <div className="flex justify-around items-center h-16 px-4 max-w-md mx-auto">
+        {tabs.map((tab) => {
+          const isActive = activeTab === tab.id;
+          return (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => {
+                soundFX.playClick();
+                onSelectTab(tab.id);
+              }}
+              className={`flex flex-col items-center justify-center gap-1 min-w-[56px] min-h-[44px] py-1 px-3 rounded-xl transition-all cursor-pointer ${
+                isActive
+                  ? 'text-indigo-600 dark:text-indigo-400 neu-pressed bg-[#e8eaf0] dark:bg-[#151b28]'
+                  : isDark
+                  ? 'text-slate-400 hover:text-slate-200 active:neu-pressed'
+                  : 'text-slate-600 hover:text-[#2e3040] active:neu-pressed'
+              }`}
+            >
+              <span className="material-symbols-outlined text-[22px]">{tab.icon}</span>
+              <span className="text-[11px] font-['Plus_Jakarta_Sans'] font-medium tracking-tight">
+                {tab.label}
+              </span>
+            </button>
+          );
+        })}
       </div>
     </nav>
   );

@@ -1,8 +1,6 @@
-import React, { useState } from 'react';
-import { AppTheme, UserStats, CurriculumLevel } from '../types';
+import React from 'react';
+import { AppTheme, UserStats } from '../types';
 import { soundFX } from '../utils/audio';
-import { HOME_WORLDS, WORLD_CARD_META, WorldTopicSection } from '../data/homeWorldsData';
-import { CURRICULUM_LEVELS_META } from '../data/curriculum/masterCurriculumCatalog';
 
 interface LearnViewProps {
   theme: AppTheme;
@@ -18,313 +16,956 @@ export const LearnView: React.FC<LearnViewProps> = ({
   userStats,
   onOpenCurriculum,
   onSelectWorld,
+  onStartLesson,
 }) => {
   const isDark = theme === 'dark';
-  const [activeLevel, setActiveLevel] = useState<CurriculumLevel>('beginner');
 
-  const filteredWorlds = HOME_WORLDS.filter((w) => w.level === activeLevel);
-  const currentLevelMeta = CURRICULUM_LEVELS_META[activeLevel];
-
-  const handleWorldClick = (world: WorldTopicSection) => {
+  const handleWorldClick = (worldId: string) => {
     soundFX.playClick();
     if (onSelectWorld) {
-      onSelectWorld(world.worldId);
+      onSelectWorld(worldId);
     } else {
-      onOpenCurriculum(world.worldId);
+      onOpenCurriculum(worldId);
     }
   };
 
-  const handleLevelChange = (level: CurriculumLevel) => {
+  const handleStartCurrentLesson = () => {
     soundFX.playClick();
-    setActiveLevel(level);
+    if (onStartLesson) {
+      onStartLesson();
+    } else {
+      handleWorldClick('world-5');
+    }
   };
 
   return (
-    <div
-      className={`min-h-full min-h-screen w-full flex flex-col items-center select-none pb-32 pt-1 px-4 transition-colors duration-300 ${
-        isDark ? 'bg-[#0b0f19] text-[#f1f3f8]' : 'bg-[#e8eaf0] text-[#1e2433]'
+    <main
+      className={`flex-1 flex flex-col relative w-full pb-24 pt-2 transition-colors duration-200 select-none ${
+        isDark ? 'bg-[#0b0f19] text-[#dfe2f1]' : 'bg-[#e8eaf0] text-[#2e3040]'
       }`}
     >
-      <div className="w-full max-w-md flex flex-col">
-        {/* ================= 3 COMPACT STATUS PILLS (NEUMORPHIC DESIGN) ================= */}
-        <section className="w-full mb-3 pt-2 sticky top-1 z-30 backdrop-blur-md pb-1">
-          <div className="flex items-center justify-between gap-2.5">
-            {/* Streak */}
-            <div
-              className={`flex-1 neu-pressed py-2 px-2.5 rounded-xl flex items-center justify-center gap-1.5 transition-all ${
-                isDark ? 'bg-[#0e131e] text-[#dfe2f1]' : 'bg-[#e8eaf0] text-[#2e3040]'
-              }`}
-            >
-              <span className="text-sm leading-none">🔥</span>
-              <span className="font-mono text-xs font-semibold text-inherit">
-                {userStats.streak || 12}
-              </span>
-            </div>
-
-            {/* Journey Progress */}
-            <div
-              className={`flex-1 neu-pressed py-2 px-2.5 rounded-xl flex items-center justify-center gap-1.5 transition-all ${
-                isDark ? 'bg-[#0e131e] text-[#dfe2f1]' : 'bg-[#e8eaf0] text-[#2e3040]'
-              }`}
-            >
-              <span className="text-xs leading-none">📈</span>
-              <span className="font-mono text-xs font-semibold text-inherit">
-                {activeLevel === 'beginner' ? '28%' : activeLevel === 'intermediate' ? '0%' : '0%'}
-              </span>
-            </div>
-
-            {/* Gems / XP */}
-            <div
-              className={`flex-1 neu-pressed py-2 px-2.5 rounded-xl flex items-center justify-center gap-1.5 transition-all ${
-                isDark ? 'bg-[#0e131e] text-[#dfe2f1]' : 'bg-[#e8eaf0] text-[#2e3040]'
-              }`}
-            >
-              <span className="text-xs leading-none">💎</span>
-              <span className="font-mono text-xs font-semibold text-inherit">
-                {userStats.stars || 120}
-              </span>
-            </div>
-          </div>
-        </section>
-
-        {/* ================= 3-LEVEL TRACK TABS (BEGINNER, INTERMEDIATE, EXPERIENCED) ================= */}
-        <section className="w-full mb-3">
+      <div className="flex flex-col w-full min-w-0 pb-12 pt-2">
+        {/* ================= SUB-HEADER CARD: Kotlin Journey Title & World 5 of 22 Progress ================= */}
+        <div className="px-5 pt-2 pb-4">
           <div
-            className={`p-1 rounded-2xl flex items-center border transition-all ${
-              isDark ? 'bg-[#151b28] border-white/10' : 'bg-white border-slate-200 shadow-sm'
+            className={`neu-raised rounded-2xl p-4 flex items-center justify-between border transition-all ${
+              isDark
+                ? 'bg-[#151b28] border-white/10 text-white'
+                : 'bg-[#e8eaf0] border-white/60 text-[#2e3040]'
             }`}
           >
-            {(['beginner', 'intermediate', 'experienced'] as CurriculumLevel[]).map((lvl) => {
-              const meta = CURRICULUM_LEVELS_META[lvl];
-              const isActive = activeLevel === lvl;
-              return (
-                <button
-                  key={lvl}
-                  type="button"
-                  onClick={() => handleLevelChange(lvl)}
-                  className={`flex-1 py-2 rounded-xl flex flex-col items-center justify-center text-center transition-all cursor-pointer ${
-                    isActive
-                      ? isDark
-                        ? 'bg-indigo-600 text-white shadow-md'
-                        : 'bg-indigo-600 text-white shadow-sm'
-                      : isDark
-                      ? 'text-slate-400 hover:text-slate-200'
-                      : 'text-slate-600 hover:text-slate-900'
+            <div className="flex flex-col gap-1">
+              <div className="flex items-center gap-2">
+                <div
+                  className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full border shadow-sm ${
+                    isDark
+                      ? 'bg-slate-800 border-white/10 text-slate-200'
+                      : 'bg-[#dcdee4] border-white/60 text-[#2e3040]'
                   }`}
                 >
-                  <span className="text-[11px] font-['Outfit'] font-bold leading-tight">
-                    {meta.title}
+                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24">
+                    <defs>
+                      <linearGradient id="ktGradSub" x1="0%" x2="100%" y1="100%" y2="0%">
+                        <stop offset="0%" stopColor="#7F52FF"></stop>
+                        <stop offset="50%" stopColor="#C711E1"></stop>
+                        <stop offset="100%" stopColor="#E24462"></stop>
+                      </linearGradient>
+                    </defs>
+                    <polygon fill="url(#ktGradSub)" points="24,0 0,0 0,24 24,0"></polygon>
+                    <polygon fill="#7F52FF" points="0,24 12,12 24,24"></polygon>
+                  </svg>
+                  <span className="text-[9px] font-mono font-bold tracking-wider uppercase">
+                    Kotlin Journey
                   </span>
-                  <span className="text-[9px] font-mono opacity-80 leading-tight">
-                    {lvl === 'beginner'
-                      ? 'Worlds 1–8'
-                      : lvl === 'intermediate'
-                      ? 'Worlds 9–15'
-                      : 'Worlds 16–22'}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-        </section>
-
-        {/* ================= HERO HEADER ================= */}
-        <div className="w-full flex items-center justify-between mb-2 px-1">
-          <div className="flex flex-col">
-            <div className="flex items-center gap-1.5">
-              <span
-                className="w-2 h-2 rounded-full"
-                style={{ backgroundColor: currentLevelMeta.color }}
-              />
-              <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-400">
-                {currentLevelMeta.badge} • {currentLevelMeta.worldsCount} WORLDS
-              </span>
-            </div>
-            <h1 className="text-lg font-['Outfit'] font-extrabold tracking-tight">
-              {currentLevelMeta.title} Learning Path
-            </h1>
-            <p className="text-[11px] text-slate-400 max-w-[260px] line-clamp-1">
-              {currentLevelMeta.goal}
-            </p>
-          </div>
-
-          <button
-            type="button"
-            onClick={() => {
-              soundFX.playClick();
-              onOpenCurriculum();
-            }}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-['Outfit'] text-xs font-bold shadow-sm shadow-indigo-600/30 active:scale-95 transition-all cursor-pointer"
-          >
-            <span className="material-symbols-outlined text-[15px]">map</span>
-            <span>All 22 Worlds</span>
-          </button>
-        </div>
-
-        {/* ================= LEARNING PATH CARDS LIST FOR ACTIVE TRACK ================= */}
-        <section className="relative w-full pt-2 pb-4 flex flex-col gap-3.5 z-10">
-          {filteredWorlds.map((world, idx) => {
-            const meta = WORLD_CARD_META[world.worldId] || {
-              tagline: 'Kotlin core concepts',
-              icon: 'data_object',
-              badge: `W${world.worldNumber}`,
-              gradient: 'from-indigo-600 to-blue-600',
-              accentColor: '#4f46e5',
-              level: world.level,
-            };
-
-            const isCapstone =
-              world.worldNumber === 8 || world.worldNumber === 15 || world.worldNumber === 22;
-            const isStarted = world.completedCount > 0;
-            const isCurrent = world.worldNumber === 1;
-
-            return (
-              <div
-                key={world.worldId}
-                id={`world-node-${world.worldNumber}`}
-                onClick={() => handleWorldClick(world)}
-                className={`w-full rounded-2xl p-4 border transition-all cursor-pointer select-none active:scale-[0.98] ${
-                  isCapstone
-                    ? isDark
-                      ? 'bg-gradient-to-r from-amber-950/40 to-[#151b28] border-amber-500/40 shadow-lg'
-                      : 'bg-gradient-to-r from-amber-50/80 to-white border-amber-300 shadow-md'
-                    : isCurrent
-                    ? isDark
-                      ? 'bg-[#151b28] border-indigo-500/60 shadow-md ring-1 ring-indigo-500/30'
-                      : 'bg-white border-indigo-400 shadow-md ring-1 ring-indigo-400/20'
-                    : isDark
-                    ? 'bg-[#151b28] border-white/10 hover:border-indigo-500/40 shadow-sm'
-                    : 'bg-white border-slate-200/90 hover:border-indigo-400 shadow-sm'
-                }`}
-              >
-                <div className="flex items-start justify-between gap-3">
-                  {/* Left: Icon & Badge */}
-                  <div className="flex items-center gap-3">
-                    <div
-                      className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 border relative ${
-                        isCapstone
-                          ? isDark
-                            ? 'bg-amber-950/60 border-amber-500/40 text-amber-400'
-                            : 'bg-amber-100 border-amber-300 text-amber-700'
-                          : isCurrent
-                          ? 'bg-gradient-to-br from-indigo-600 to-indigo-500 text-white border-indigo-400'
-                          : isDark
-                          ? 'bg-[#0f1420] border-white/10 text-slate-400'
-                          : 'bg-slate-100 border-slate-200 text-slate-600'
-                      }`}
-                    >
-                      <span className="material-symbols-outlined text-[24px]">
-                        {isCapstone ? 'military_tech' : meta.icon}
-                      </span>
-                      <span
-                        className={`absolute -bottom-1 -right-1 px-1 py-0.2 rounded text-[8px] font-mono font-bold ${
-                          isDark ? 'bg-[#0e131e] text-slate-300' : 'bg-white text-slate-700 border border-slate-200'
-                        }`}
-                      >
-                        W{world.worldNumber}
-                      </span>
-                    </div>
-
-                    {/* Middle: World Title & Details */}
-                    <div className="flex flex-col min-w-0">
-                      <div className="flex items-center gap-1.5 mb-0.5">
-                        <span
-                          className={`text-[9px] font-mono font-bold tracking-wider uppercase px-1.5 py-0.5 rounded ${
-                            isCapstone
-                              ? 'bg-amber-500/10 text-amber-500 border border-amber-500/30'
-                              : isCurrent
-                              ? 'bg-indigo-500/10 text-indigo-500'
-                              : 'bg-slate-500/10 text-slate-400'
-                          }`}
-                        >
-                          {meta.badge}
-                        </span>
-                        {isCapstone && (
-                          <span className="text-[9px] font-mono font-semibold text-amber-500">
-                            ★ Capstone Boss
-                          </span>
-                        )}
-                      </div>
-
-                      <h2 className="text-sm font-['Outfit'] font-bold text-inherit truncate">
-                        World {world.worldNumber}: {world.topicTitle}
-                      </h2>
-
-                      <p className="text-[11px] text-slate-400 line-clamp-1 mt-0.5">
-                        {meta.tagline}
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Right: Progress & Chevron */}
-                  <div className="flex flex-col items-end shrink-0 pl-1">
-                    <span
-                      className={`text-[10px] font-mono font-bold ${
-                        isStarted ? 'text-emerald-500' : 'text-slate-400'
-                      }`}
-                    >
-                      {isStarted ? `${world.completedCount}/${world.totalCount}` : `${world.totalCount} steps`}
-                    </span>
-                    <div
-                      className={`mt-1.5 w-6 h-6 rounded-lg flex items-center justify-center ${
-                        isDark ? 'bg-white/5 text-slate-400' : 'bg-slate-100 text-slate-600'
-                      }`}
-                    >
-                      <span className="material-symbols-outlined text-[16px]">chevron_right</span>
-                    </div>
-                  </div>
                 </div>
-
-                {/* Progress bar for started worlds */}
-                {world.percentage > 0 && (
-                  <div
-                    className={`mt-3 w-full h-1.5 rounded-full overflow-hidden ${
-                      isDark ? 'bg-[#090d16]' : 'bg-slate-100'
-                    }`}
-                  >
-                    <div
-                      className="h-full rounded-full bg-emerald-500 transition-all duration-300"
-                      style={{ width: `${world.percentage}%` }}
-                    />
-                  </div>
-                )}
+                <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400 font-medium">
+                  22 Worlds Total
+                </span>
               </div>
-            );
-          })}
-        </section>
-
-        {/* ================= TRACK CAPSTONE SUMMARY BANNER ================= */}
-        <section className="w-full mt-2 mb-4 flex flex-col items-center">
-          <div
-            className={`w-full rounded-3xl p-5 border flex flex-col items-center text-center transition-all ${
-              isDark
-                ? 'bg-gradient-to-b from-[#151b28] to-[#0f1420] border-indigo-500/30 shadow-xl'
-                : 'bg-gradient-to-b from-white to-slate-50 border-indigo-200 shadow-md'
-            }`}
-          >
-            <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 border border-indigo-500/30 flex items-center justify-center text-indigo-500 mb-2.5">
-              <span className="material-symbols-outlined text-[28px]">military_tech</span>
+              <h1 className="text-base font-['Outfit'] font-bold tracking-tight">
+                World 5 of 22 • Function Forge
+              </h1>
             </div>
-            <h3 className="text-sm font-['Outfit'] font-bold mb-1">
-              {currentLevelMeta.bossTitle}
-            </h3>
-            <p className="text-xs text-slate-400 max-w-xs mb-3">
-              {currentLevelMeta.bossDescription}
-            </p>
-            <button
-              type="button"
+
+            <div
               onClick={() => {
                 soundFX.playClick();
                 onOpenCurriculum();
               }}
-              className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-['Outfit'] font-semibold text-xs flex items-center gap-1.5 shadow-md shadow-indigo-500/20 active:scale-95 cursor-pointer"
+              className={`neu-pressed px-3 py-1.5 rounded-xl flex flex-col items-end gap-0.5 cursor-pointer active:scale-95 transition-transform ${
+                isDark ? 'bg-[#121824]' : 'bg-[#e8eaf0]'
+              }`}
+              title="Open Curriculum Explorer"
             >
-              <span className="material-symbols-outlined text-[15px]">account_tree</span>
-              <span>Open Master Curriculum (22 Worlds)</span>
-            </button>
+              <span className="text-[9px] font-['Plus_Jakarta_Sans'] font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider">
+                PROGRESS
+              </span>
+              <span className="font-mono text-xs font-bold text-inherit">22.7%</span>
+            </div>
           </div>
-        </section>
-      </div>
+        </div>
+
+        {/* ================= SECTION 1: BEGINNER (Worlds 1-8) ================= */}
+        <section className="relative w-full">
+          <div
+            className={`sticky top-[58px] z-30 w-full backdrop-blur-xl transition-colors border-b ${
+              isDark
+                ? 'bg-[#0b0f19]/85 border-white/5 shadow-[0_4px_16px_rgba(0,0,0,0.35)]'
+                : 'bg-[#e8eaf0]/85 border-white/40 shadow-[0_4px_16px_rgba(0,0,0,0.03)]'
+            }`}
+          >
+            <div className="max-w-md mx-auto px-5 py-2.5 flex items-center gap-3">
+              <span
+                className={`text-[10px] font-mono font-bold tracking-wider uppercase text-indigo-600 dark:text-indigo-400 px-3 py-1 rounded-full neu-pressed border ${
+                  isDark ? 'bg-[#121824] border-white/5' : 'bg-[#e8eaf0] border-black/5'
+                }`}
+              >
+                CHAPTER 1 · BEGINNER
+              </span>
+              <div className="flex-1 h-[1px] bg-slate-300/60 dark:bg-white/10"></div>
+            </div>
+          </div>
+
+          {/* SNAKE PATH SECTION 1: WORLDS 1-8 */}
+          <div className="relative w-full max-w-[360px] mx-auto px-5 pt-3 pb-8 flex flex-col items-center overflow-hidden">
+          {/* Continuous SVG Path for Section 1 */}
+          <svg
+            className="absolute top-2 inset-x-0 w-full h-[880px] pointer-events-none stroke-current"
+            fill="none"
+            preserveAspectRatio="none"
+            viewBox="0 0 360 880"
+          >
+            <defs>
+              <linearGradient id="sec1Active" x1="0%" x2="0%" y1="0%" y2="100%">
+                <stop offset="0%" stopColor="#6366f1"></stop>
+                <stop offset="52%" stopColor="#8b5cf6"></stop>
+                <stop offset="58%" stopColor={isDark ? '#263148' : '#d0d2dc'}></stop>
+                <stop offset="100%" stopColor={isDark ? '#263148' : '#d0d2dc'}></stop>
+              </linearGradient>
+            </defs>
+            {/* Neumorphic highlight track */}
+            <path
+              d="M 90,30 C 90,75 270,75 270,130 C 270,185 90,185 90,240 C 90,295 270,295 270,350 C 270,405 180,415 180,470 L 180,520 C 180,575 270,575 270,630 C 270,685 90,685 90,740 C 90,795 270,795 270,850"
+              opacity={isDark ? '0.15' : '0.9'}
+              stroke={isDark ? '#384260' : '#ffffff'}
+              strokeLinecap="round"
+              strokeWidth="12"
+            ></path>
+            {/* Recessed base track */}
+            <path
+              d="M 90,30 C 90,75 270,75 270,130 C 270,185 90,185 90,240 C 90,295 270,295 270,350 C 270,405 180,415 180,470 L 180,520 C 180,575 270,575 270,630 C 270,685 90,685 90,740 C 90,795 270,795 270,850"
+              stroke={isDark ? '#172033' : '#d0d2dc'}
+              strokeLinecap="round"
+              strokeWidth="6"
+            ></path>
+            {/* Active gradient ribbon up to World 5 */}
+            <path
+              d="M 90,30 C 90,75 270,75 270,130 C 270,185 90,185 90,240 C 90,295 270,295 270,350 C 270,405 180,415 180,470"
+              stroke="url(#sec1Active)"
+              strokeDasharray="4 4"
+              strokeLinecap="round"
+              strokeWidth="4"
+            ></path>
+          </svg>
+
+          {/* WORLD 1: Completed (Left) */}
+          <div className="relative w-full flex items-center justify-start pl-8 pt-1 z-10">
+            <div
+              className="flex items-center gap-2.5 cursor-pointer active:scale-95 transition-transform"
+              onClick={() => handleWorldClick('world-1')}
+            >
+              <div
+                className={`w-11 h-11 rounded-2xl neu-raised flex items-center justify-center border ${
+                  isDark ? 'bg-[#151b28] border-white/10' : 'bg-[#e8eaf0] border-white/60'
+                }`}
+              >
+                <span
+                  className="material-symbols-outlined text-indigo-600 dark:text-indigo-400 text-[20px]"
+                  style={{ fontVariationSettings: "'FILL' 1" }}
+                >
+                  check_circle
+                </span>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-[11px] font-mono text-indigo-600 dark:text-indigo-400 font-bold">
+                  01
+                </span>
+                <span className="text-xs font-['Outfit'] font-semibold text-inherit">
+                  Kotlin Awakening
+                </span>
+                <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400">
+                  12 lessons
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* WORLD 2: Completed (Right) */}
+          <div className="relative w-full flex items-center justify-end pr-8 pt-12 z-10">
+            <div
+              className="flex items-center gap-2.5 flex-row-reverse cursor-pointer active:scale-95 transition-transform"
+              onClick={() => handleWorldClick('world-2')}
+            >
+              <div
+                className={`w-11 h-11 rounded-2xl neu-raised flex items-center justify-center border ${
+                  isDark ? 'bg-[#151b28] border-white/10' : 'bg-[#e8eaf0] border-white/60'
+                }`}
+              >
+                <span
+                  className="material-symbols-outlined text-indigo-600 dark:text-indigo-400 text-[20px]"
+                  style={{ fontVariationSettings: "'FILL' 1" }}
+                >
+                  check_circle
+                </span>
+              </div>
+              <div className="flex flex-col text-right">
+                <span className="text-[11px] font-mono text-indigo-600 dark:text-indigo-400 font-bold">
+                  02
+                </span>
+                <span className="text-xs font-['Outfit'] font-semibold text-inherit">
+                  Operator Forge
+                </span>
+                <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400">
+                  10 lessons
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* WORLD 3: Completed (Left) */}
+          <div className="relative w-full flex items-center justify-start pl-8 pt-12 z-10">
+            <div
+              className="flex items-center gap-2.5 cursor-pointer active:scale-95 transition-transform"
+              onClick={() => handleWorldClick('world-3')}
+            >
+              <div
+                className={`w-11 h-11 rounded-2xl neu-raised flex items-center justify-center border ${
+                  isDark ? 'bg-[#151b28] border-white/10' : 'bg-[#e8eaf0] border-white/60'
+                }`}
+              >
+                <span
+                  className="material-symbols-outlined text-indigo-600 dark:text-indigo-400 text-[20px]"
+                  style={{ fontVariationSettings: "'FILL' 1" }}
+                >
+                  check_circle
+                </span>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-[11px] font-mono text-indigo-600 dark:text-indigo-400 font-bold">
+                  03
+                </span>
+                <span className="text-xs font-['Outfit'] font-semibold text-inherit">
+                  Decision Maker
+                </span>
+                <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400">
+                  14 lessons
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* WORLD 4: Completed (Right) */}
+          <div className="relative w-full flex items-center justify-end pr-8 pt-12 z-10">
+            <div
+              className="flex items-center gap-2.5 flex-row-reverse cursor-pointer active:scale-95 transition-transform"
+              onClick={() => handleWorldClick('world-4')}
+            >
+              <div
+                className={`w-11 h-11 rounded-2xl neu-raised flex items-center justify-center border ${
+                  isDark ? 'bg-[#151b28] border-white/10' : 'bg-[#e8eaf0] border-white/60'
+                }`}
+              >
+                <span
+                  className="material-symbols-outlined text-indigo-600 dark:text-indigo-400 text-[20px]"
+                  style={{ fontVariationSettings: "'FILL' 1" }}
+                >
+                  check_circle
+                </span>
+              </div>
+              <div className="flex flex-col text-right">
+                <span className="text-[11px] font-mono text-indigo-600 dark:text-indigo-400 font-bold">
+                  04
+                </span>
+                <span className="text-xs font-['Outfit'] font-semibold text-inherit">
+                  Loop Master
+                </span>
+                <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400">
+                  16 lessons
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* WORLD 5: CURRENT WORLD (CENTER FOCAL POINT) */}
+          <div className="relative w-full flex flex-col items-center pt-10 pb-4 z-20">
+            {/* Big Glowing Current World Node */}
+            <div className="relative flex items-center justify-center mb-3">
+              <button
+                type="button"
+                onClick={handleStartCurrentLesson}
+                className="w-16 h-16 rounded-3xl bg-gradient-to-r from-[#6366f1] to-[#8b5cf6] flex items-center justify-center pulsing-dot text-white neu-raised cta-glow active:scale-95 transition-transform cursor-pointer"
+                title="Start World 5"
+              >
+                <span
+                  className="material-symbols-outlined text-[30px]"
+                  style={{ fontVariationSettings: "'FILL' 1" }}
+                >
+                  play_arrow
+                </span>
+              </button>
+            </div>
+
+            {/* Attached Callout Card */}
+            <div
+              className={`w-full max-w-[320px] neu-raised rounded-2xl p-4 relative flex flex-col gap-2.5 border transition-all ${
+                isDark
+                  ? 'bg-[#151b28] border-white/10 text-white'
+                  : 'bg-[#e8eaf0] border-white/80 text-[#2e3040]'
+              }`}
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400 px-2 py-0.5 rounded-md bg-indigo-500/10 border border-indigo-500/20">
+                  CURRENT WORLD
+                </span>
+                <span className="text-[11px] font-mono font-semibold text-slate-500 dark:text-slate-400">
+                  World 05 / 22
+                </span>
+              </div>
+              <div className="flex flex-col">
+                <div className="flex items-baseline justify-between">
+                  <h3 className="text-base font-['Outfit'] font-bold text-inherit tracking-tight">
+                    05 · Function Forge
+                  </h3>
+                  <span className="text-[11px] font-semibold text-indigo-600 dark:text-indigo-400 font-mono">
+                    7 / 12 lessons
+                  </span>
+                </div>
+                <p className="text-xs text-slate-600 dark:text-slate-300 leading-snug mt-0.5">
+                  Master modular functions, default parameters, named calls, and scope contracts.
+                </p>
+              </div>
+              <button
+                id="startLessonBtn"
+                type="button"
+                onClick={handleStartCurrentLesson}
+                className="h-11 w-full rounded-xl bg-gradient-to-r from-[#6366f1] to-[#8b5cf6] text-white font-['Outfit'] font-semibold text-sm flex items-center justify-center gap-2 cta-glow active:scale-[0.98] transition-all cursor-pointer"
+              >
+                <span>START WORLD 5</span>
+                <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
+              </button>
+            </div>
+          </div>
+
+          {/* WORLD 6: Locked (Right) */}
+          <div className="relative w-full flex items-center justify-end pr-8 pt-10 z-10">
+            <div
+              className="flex items-center gap-2.5 flex-row-reverse cursor-pointer active:scale-95 transition-transform"
+              onClick={() => handleWorldClick('world-6')}
+            >
+              <div
+                className={`w-11 h-11 rounded-2xl neu-raised flex items-center justify-center border ${
+                  isDark ? 'bg-[#151b28] border-white/10' : 'bg-[#e8eaf0] border-white/40'
+                }`}
+              >
+                <span className="material-symbols-outlined text-slate-500 dark:text-slate-400 text-[18px]">
+                  lock
+                </span>
+              </div>
+              <div className="flex flex-col text-right">
+                <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400 font-medium">
+                  06
+                </span>
+                <span className="text-xs font-['Outfit'] font-semibold text-slate-500 dark:text-slate-400">
+                  Collection Valley
+                </span>
+                <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400">
+                  15 lessons
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* WORLD 7: Locked (Left) */}
+          <div className="relative w-full flex items-center justify-start pl-8 pt-12 z-10">
+            <div
+              className="flex items-center gap-2.5 cursor-pointer active:scale-95 transition-transform"
+              onClick={() => handleWorldClick('world-7')}
+            >
+              <div
+                className={`w-11 h-11 rounded-2xl neu-raised flex items-center justify-center border ${
+                  isDark ? 'bg-[#151b28] border-white/10' : 'bg-[#e8eaf0] border-white/40'
+                }`}
+              >
+                <span className="material-symbols-outlined text-slate-500 dark:text-slate-400 text-[18px]">
+                  lock
+                </span>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400 font-medium">
+                  07
+                </span>
+                <span className="text-xs font-['Outfit'] font-semibold text-slate-500 dark:text-slate-400">
+                  Null Safety Shield
+                </span>
+                <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400">
+                  11 lessons
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* WORLD 8: Locked (Right) */}
+          <div className="relative w-full flex items-center justify-end pr-8 pt-12 z-10">
+            <div
+              className="flex items-center gap-2.5 flex-row-reverse cursor-pointer active:scale-95 transition-transform"
+              onClick={() => handleWorldClick('world-8')}
+            >
+              <div
+                className={`w-11 h-11 rounded-2xl neu-raised flex items-center justify-center border ${
+                  isDark ? 'bg-[#151b28] border-white/10' : 'bg-[#e8eaf0] border-white/40'
+                }`}
+              >
+                <span className="material-symbols-outlined text-slate-500 dark:text-slate-400 text-[18px]">
+                  lock
+                </span>
+              </div>
+              <div className="flex flex-col text-right">
+                <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400 font-medium">
+                  08
+                </span>
+                <span className="text-xs font-['Outfit'] font-semibold text-slate-500 dark:text-slate-400">
+                  Object Kingdom
+                </span>
+                <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400">
+                  18 lessons
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+        {/* ================= SECTION 2: INTERMEDIATE (Worlds 9-15) ================= */}
+        <section className="relative w-full">
+          <div
+            className={`sticky top-[58px] z-30 w-full backdrop-blur-xl transition-colors border-b ${
+              isDark
+                ? 'bg-[#0b0f19]/85 border-white/5 shadow-[0_4px_16px_rgba(0,0,0,0.35)]'
+                : 'bg-[#e8eaf0]/85 border-white/40 shadow-[0_4px_16px_rgba(0,0,0,0.03)]'
+            }`}
+          >
+            <div className="max-w-md mx-auto px-5 py-2.5 flex items-center gap-3">
+              <span
+                className={`text-[10px] font-mono font-bold tracking-wider uppercase text-purple-600 dark:text-purple-400 px-3 py-1 rounded-full neu-pressed border ${
+                  isDark ? 'bg-[#121824] border-white/5' : 'bg-[#e8eaf0] border-black/5'
+                }`}
+              >
+                CHAPTER 2 · INTERMEDIATE
+              </span>
+              <div className="flex-1 h-[1px] bg-slate-300/60 dark:bg-white/10"></div>
+            </div>
+          </div>
+
+          {/* SNAKE PATH SECTION 2: WORLDS 9-15 */}
+          <div className="relative w-full max-w-[360px] mx-auto px-5 pt-3 pb-8 flex flex-col items-center overflow-hidden">
+          <svg
+            className="absolute top-2 inset-x-0 w-full h-[760px] pointer-events-none stroke-current"
+            fill="none"
+            preserveAspectRatio="none"
+            viewBox="0 0 360 760"
+          >
+            {/* Neumorphic highlight track */}
+            <path
+              d="M 270,25 C 270,75 90,75 90,125 C 90,175 270,175 270,225 C 270,275 90,275 90,325 C 90,375 270,375 270,425 C 270,475 90,475 90,525 C 90,575 270,575 270,625 C 270,675 180,685 180,735"
+              opacity={isDark ? '0.15' : '0.9'}
+              stroke={isDark ? '#384260' : '#ffffff'}
+              strokeLinecap="round"
+              strokeWidth="12"
+            ></path>
+            {/* Recessed base track */}
+            <path
+              d="M 270,25 C 270,75 90,75 90,125 C 90,175 270,175 270,225 C 270,275 90,275 90,325 C 90,375 270,375 270,425 C 270,475 90,475 90,525 C 90,575 270,575 270,625 C 270,675 180,685 180,735"
+              stroke={isDark ? '#172033' : '#d0d2dc'}
+              strokeLinecap="round"
+              strokeWidth="6"
+            ></path>
+          </svg>
+
+          {/* WORLD 9: Locked (Left) */}
+          <div className="relative w-full flex items-center justify-start pl-8 pt-3 z-10">
+            <div
+              className="flex items-center gap-2.5 cursor-pointer active:scale-95 transition-transform"
+              onClick={() => handleWorldClick('world-9')}
+            >
+              <div
+                className={`w-11 h-11 rounded-2xl neu-raised flex items-center justify-center border ${
+                  isDark ? 'bg-[#151b28] border-white/10' : 'bg-[#e8eaf0] border-white/40'
+                }`}
+              >
+                <span className="material-symbols-outlined text-slate-500 dark:text-slate-400 text-[18px]">
+                  lock
+                </span>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400 font-medium">
+                  09
+                </span>
+                <span className="text-xs font-['Outfit'] font-semibold text-slate-500 dark:text-slate-400">
+                  Lambda Lab
+                </span>
+                <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400">
+                  12 lessons
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* WORLD 10: Locked (Right) */}
+          <div className="relative w-full flex items-center justify-end pr-8 pt-11 z-10">
+            <div
+              className="flex items-center gap-2.5 flex-row-reverse cursor-pointer active:scale-95 transition-transform"
+              onClick={() => handleWorldClick('world-10')}
+            >
+              <div
+                className={`w-11 h-11 rounded-2xl neu-raised flex items-center justify-center border ${
+                  isDark ? 'bg-[#151b28] border-white/10' : 'bg-[#e8eaf0] border-white/40'
+                }`}
+              >
+                <span className="material-symbols-outlined text-slate-500 dark:text-slate-400 text-[18px]">
+                  lock
+                </span>
+              </div>
+              <div className="flex flex-col text-right">
+                <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400 font-medium">
+                  10
+                </span>
+                <span className="text-xs font-['Outfit'] font-semibold text-slate-500 dark:text-slate-400">
+                  Collection Wizardry
+                </span>
+                <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400">
+                  10 lessons
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* WORLD 11: Locked (Left) */}
+          <div className="relative w-full flex items-center justify-start pl-8 pt-11 z-10">
+            <div
+              className="flex items-center gap-2.5 cursor-pointer active:scale-95 transition-transform"
+              onClick={() => handleWorldClick('world-11')}
+            >
+              <div
+                className={`w-11 h-11 rounded-2xl neu-raised flex items-center justify-center border ${
+                  isDark ? 'bg-[#151b28] border-white/10' : 'bg-[#e8eaf0] border-white/40'
+                }`}
+              >
+                <span className="material-symbols-outlined text-slate-500 dark:text-slate-400 text-[18px]">
+                  lock
+                </span>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400 font-medium">
+                  11
+                </span>
+                <span className="text-xs font-['Outfit'] font-semibold text-slate-500 dark:text-slate-400">
+                  OOP Evolution
+                </span>
+                <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400">
+                  14 lessons
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* WORLD 12: Locked (Right) */}
+          <div className="relative w-full flex items-center justify-end pr-8 pt-11 z-10">
+            <div
+              className="flex items-center gap-2.5 flex-row-reverse cursor-pointer active:scale-95 transition-transform"
+              onClick={() => handleWorldClick('world-12')}
+            >
+              <div
+                className={`w-11 h-11 rounded-2xl neu-raised flex items-center justify-center border ${
+                  isDark ? 'bg-[#151b28] border-white/10' : 'bg-[#e8eaf0] border-white/40'
+                }`}
+              >
+                <span className="material-symbols-outlined text-slate-500 dark:text-slate-400 text-[18px]">
+                  lock
+                </span>
+              </div>
+              <div className="flex flex-col text-right">
+                <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400 font-medium">
+                  12
+                </span>
+                <span className="text-xs font-['Outfit'] font-semibold text-slate-500 dark:text-slate-400">
+                  Generic Realm
+                </span>
+                <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400">
+                  16 lessons
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* WORLD 13: Locked (Left) */}
+          <div className="relative w-full flex items-center justify-start pl-8 pt-11 z-10">
+            <div
+              className="flex items-center gap-2.5 cursor-pointer active:scale-95 transition-transform"
+              onClick={() => handleWorldClick('world-13')}
+            >
+              <div
+                className={`w-11 h-11 rounded-2xl neu-raised flex items-center justify-center border ${
+                  isDark ? 'bg-[#151b28] border-white/10' : 'bg-[#e8eaf0] border-white/40'
+                }`}
+              >
+                <span className="material-symbols-outlined text-slate-500 dark:text-slate-400 text-[18px]">
+                  lock
+                </span>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400 font-medium">
+                  13
+                </span>
+                <span className="text-xs font-['Outfit'] font-semibold text-slate-500 dark:text-slate-400">
+                  Scope Masters
+                </span>
+                <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400">
+                  10 lessons
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* WORLD 14: Locked (Right) */}
+          <div className="relative w-full flex items-center justify-end pr-8 pt-11 z-10">
+            <div
+              className="flex items-center gap-2.5 flex-row-reverse cursor-pointer active:scale-95 transition-transform"
+              onClick={() => handleWorldClick('world-14')}
+            >
+              <div
+                className={`w-11 h-11 rounded-2xl neu-raised flex items-center justify-center border ${
+                  isDark ? 'bg-[#151b28] border-white/10' : 'bg-[#e8eaf0] border-white/40'
+                }`}
+              >
+                <span className="material-symbols-outlined text-slate-500 dark:text-slate-400 text-[18px]">
+                  lock
+                </span>
+              </div>
+              <div className="flex flex-col text-right">
+                <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400 font-medium">
+                  14
+                </span>
+                <span className="text-xs font-['Outfit'] font-semibold text-slate-500 dark:text-slate-400">
+                  Sequence Dimension
+                </span>
+                <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400">
+                  15 lessons
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* WORLD 15: Chapter Boss Milestone (Center) */}
+          <div className="relative w-full flex items-center justify-center pt-11 z-10">
+            <div
+              className="flex flex-col items-center cursor-pointer active:scale-95 transition-transform"
+              onClick={() => handleWorldClick('world-15')}
+            >
+              <div
+                className={`w-12 h-12 rounded-2xl neu-raised flex items-center justify-center border relative ${
+                  isDark ? 'bg-[#151b28] border-white/10' : 'bg-[#e8eaf0] border-white/50'
+                }`}
+              >
+                <span className="material-symbols-outlined text-slate-500 dark:text-slate-400 text-[20px]">
+                  shield
+                </span>
+                <span className="material-symbols-outlined text-[12px] text-slate-400 absolute bottom-1 right-1">
+                  lock
+                </span>
+              </div>
+              <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400 font-medium mt-1">
+                15
+              </span>
+              <span className="text-xs font-['Outfit'] font-semibold text-slate-500 dark:text-slate-400">
+                Error Fortress
+              </span>
+              <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400">
+                15 lessons
+              </span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+        {/* ================= SECTION 3: EXPERIENCED (Worlds 16-22) ================= */}
+        <section className="relative w-full">
+          <div
+            className={`sticky top-[58px] z-30 w-full backdrop-blur-xl transition-colors border-b ${
+              isDark
+                ? 'bg-[#0b0f19]/85 border-white/5 shadow-[0_4px_16px_rgba(0,0,0,0.35)]'
+                : 'bg-[#e8eaf0]/85 border-white/40 shadow-[0_4px_16px_rgba(0,0,0,0.03)]'
+            }`}
+          >
+            <div className="max-w-md mx-auto px-5 py-2.5 flex items-center gap-3">
+              <span
+                className={`text-[10px] font-mono font-bold tracking-wider uppercase text-slate-600 dark:text-slate-400 px-3 py-1 rounded-full neu-pressed border ${
+                  isDark ? 'bg-[#121824] border-white/5' : 'bg-[#e8eaf0] border-black/5'
+                }`}
+              >
+                CHAPTER 3 · EXPERIENCED
+              </span>
+              <div className="flex-1 h-[1px] bg-slate-300/60 dark:bg-white/10"></div>
+            </div>
+          </div>
+
+          {/* SNAKE PATH SECTION 3: WORLDS 16-22 */}
+          <div className="relative w-full max-w-[360px] mx-auto px-5 pt-3 pb-8 flex flex-col items-center overflow-hidden">
+          <svg
+            className="absolute top-2 inset-x-0 w-full h-[760px] pointer-events-none stroke-current"
+            fill="none"
+            preserveAspectRatio="none"
+            viewBox="0 0 360 760"
+          >
+            {/* Neumorphic highlight track */}
+            <path
+              d="M 180,25 C 180,65 90,75 90,125 C 90,175 270,175 270,225 C 270,275 90,275 90,325 C 90,375 270,375 270,425 C 270,475 90,475 90,525 C 90,575 270,575 270,625 C 270,675 180,685 180,735"
+              opacity={isDark ? '0.15' : '0.9'}
+              stroke={isDark ? '#384260' : '#ffffff'}
+              strokeLinecap="round"
+              strokeWidth="12"
+            ></path>
+            {/* Recessed base track */}
+            <path
+              d="M 180,25 C 180,65 90,75 90,125 C 90,175 270,175 270,225 C 270,275 90,275 90,325 C 90,375 270,375 270,425 C 270,475 90,475 90,525 C 90,575 270,575 270,625 C 270,675 180,685 180,735"
+              stroke={isDark ? '#172033' : '#d0d2dc'}
+              strokeLinecap="round"
+              strokeWidth="6"
+            ></path>
+          </svg>
+
+          {/* WORLD 16: Locked (Left) */}
+          <div className="relative w-full flex items-center justify-start pl-8 pt-3 z-10">
+            <div
+              className="flex items-center gap-2.5 cursor-pointer active:scale-95 transition-transform"
+              onClick={() => handleWorldClick('world-16')}
+            >
+              <div
+                className={`w-11 h-11 rounded-2xl neu-raised flex items-center justify-center border ${
+                  isDark ? 'bg-[#151b28] border-white/10' : 'bg-[#e8eaf0] border-white/40'
+                }`}
+              >
+                <span className="material-symbols-outlined text-slate-500 dark:text-slate-400 text-[18px]">
+                  lock
+                </span>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400 font-medium">
+                  16
+                </span>
+                <span className="text-xs font-['Outfit'] font-semibold text-slate-500 dark:text-slate-400">
+                  Coroutine Academy
+                </span>
+                <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400">
+                  12 lessons
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* WORLD 17: Locked (Right) */}
+          <div className="relative w-full flex items-center justify-end pr-8 pt-11 z-10">
+            <div
+              className="flex items-center gap-2.5 flex-row-reverse cursor-pointer active:scale-95 transition-transform"
+              onClick={() => handleWorldClick('world-17')}
+            >
+              <div
+                className={`w-11 h-11 rounded-2xl neu-raised flex items-center justify-center border ${
+                  isDark ? 'bg-[#151b28] border-white/10' : 'bg-[#e8eaf0] border-white/40'
+                }`}
+              >
+                <span className="material-symbols-outlined text-slate-500 dark:text-slate-400 text-[18px]">
+                  lock
+                </span>
+              </div>
+              <div className="flex flex-col text-right">
+                <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400 font-medium">
+                  17
+                </span>
+                <span className="text-xs font-['Outfit'] font-semibold text-slate-500 dark:text-slate-400">
+                  Flow Universe
+                </span>
+                <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400">
+                  10 lessons
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* WORLD 18: Locked (Left) */}
+          <div className="relative w-full flex items-center justify-start pl-8 pt-11 z-10">
+            <div
+              className="flex items-center gap-2.5 cursor-pointer active:scale-95 transition-transform"
+              onClick={() => handleWorldClick('world-18')}
+            >
+              <div
+                className={`w-11 h-11 rounded-2xl neu-raised flex items-center justify-center border ${
+                  isDark ? 'bg-[#151b28] border-white/10' : 'bg-[#e8eaf0] border-white/40'
+                }`}
+              >
+                <span className="material-symbols-outlined text-slate-500 dark:text-slate-400 text-[18px]">
+                  lock
+                </span>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400 font-medium">
+                  18
+                </span>
+                <span className="text-xs font-['Outfit'] font-semibold text-slate-500 dark:text-slate-400">
+                  Concurrency Arena
+                </span>
+                <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400">
+                  14 lessons
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* WORLD 19: Locked (Right) */}
+          <div className="relative w-full flex items-center justify-end pr-8 pt-11 z-10">
+            <div
+              className="flex items-center gap-2.5 flex-row-reverse cursor-pointer active:scale-95 transition-transform"
+              onClick={() => handleWorldClick('world-19')}
+            >
+              <div
+                className={`w-11 h-11 rounded-2xl neu-raised flex items-center justify-center border ${
+                  isDark ? 'bg-[#151b28] border-white/10' : 'bg-[#e8eaf0] border-white/40'
+                }`}
+              >
+                <span className="material-symbols-outlined text-slate-500 dark:text-slate-400 text-[18px]">
+                  lock
+                </span>
+              </div>
+              <div className="flex flex-col text-right">
+                <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400 font-medium">
+                  19
+                </span>
+                <span className="text-xs font-['Outfit'] font-semibold text-slate-500 dark:text-slate-400">
+                  Kotlin Blacksmith
+                </span>
+                <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400">
+                  16 lessons
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* WORLD 20: Locked (Left) */}
+          <div className="relative w-full flex items-center justify-start pl-8 pt-11 z-10">
+            <div
+              className="flex items-center gap-2.5 cursor-pointer active:scale-95 transition-transform"
+              onClick={() => handleWorldClick('world-20')}
+            >
+              <div
+                className={`w-11 h-11 rounded-2xl neu-raised flex items-center justify-center border ${
+                  isDark ? 'bg-[#151b28] border-white/10' : 'bg-[#e8eaf0] border-white/40'
+                }`}
+              >
+                <span className="material-symbols-outlined text-slate-500 dark:text-slate-400 text-[18px]">
+                  lock
+                </span>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400 font-medium">
+                  20
+                </span>
+                <span className="text-xs font-['Outfit'] font-semibold text-slate-500 dark:text-slate-400">
+                  JVM Bridge
+                </span>
+                <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400">
+                  10 lessons
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* WORLD 21: Locked (Right) */}
+          <div className="relative w-full flex items-center justify-end pr-8 pt-11 z-10">
+            <div
+              className="flex items-center gap-2.5 flex-row-reverse cursor-pointer active:scale-95 transition-transform"
+              onClick={() => handleWorldClick('world-21')}
+            >
+              <div
+                className={`w-11 h-11 rounded-2xl neu-raised flex items-center justify-center border ${
+                  isDark ? 'bg-[#151b28] border-white/10' : 'bg-[#e8eaf0] border-white/40'
+                }`}
+              >
+                <span className="material-symbols-outlined text-slate-500 dark:text-slate-400 text-[18px]">
+                  lock
+                </span>
+              </div>
+              <div className="flex flex-col text-right">
+                <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400 font-medium">
+                  21
+                </span>
+                <span className="text-xs font-['Outfit'] font-semibold text-slate-500 dark:text-slate-400">
+                  Performance Lab
+                </span>
+                <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400">
+                  15 lessons
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* WORLD 22: GRAND PINNACLE (Center) */}
+          <div className="relative w-full max-w-[320px] pt-12 pb-4 z-20 flex flex-col items-center">
+            <div
+              className={`neu-raised rounded-3xl p-4 w-full flex items-center justify-between border cursor-pointer active:scale-95 transition-transform ${
+                isDark
+                  ? 'bg-[#151b28] border-white/10 text-white'
+                  : 'bg-[#e8eaf0] border-white/60 text-[#2e3040]'
+              }`}
+              onClick={() => handleWorldClick('world-22')}
+            >
+              <div className="flex items-center gap-3">
+                <div
+                  className={`w-12 h-12 rounded-2xl neu-pressed flex items-center justify-center relative ${
+                    isDark ? 'bg-[#121824]' : 'bg-[#e8eaf0]'
+                  }`}
+                >
+                  <span className="material-symbols-outlined text-purple-600 dark:text-purple-400 text-[26px]">
+                    military_tech
+                  </span>
+                </div>
+                <div className="flex flex-col">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[9px] font-mono font-bold tracking-wider uppercase text-purple-600 dark:text-purple-400">
+                      FINAL WORLD 22
+                    </span>
+                    <span className="text-[9px] font-mono text-slate-500 dark:text-slate-400">
+                      • 500 XP
+                    </span>
+                  </div>
+                  <h3 className="text-xs font-['Outfit'] font-bold text-inherit">
+                    Production Kotlin
+                  </h3>
+                  <span className="text-[10px] text-slate-500 dark:text-slate-400">
+                    Full-stack Arch & CI/CD Mastery
+                  </span>
+                </div>
+              </div>
+              <div
+                className={`w-8 h-8 rounded-xl neu-raised flex items-center justify-center ${
+                  isDark ? 'bg-[#151b28]' : 'bg-[#e8eaf0]'
+                }`}
+              >
+                <span className="material-symbols-outlined text-slate-400 text-[16px]">lock</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
     </div>
+  </main>
   );
 };

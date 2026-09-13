@@ -3,12 +3,11 @@ import { AppTheme, UserStats } from '../types';
 import { FiveStageLesson, AVAILABLE_FIVE_STAGE_LESSONS } from '../data/lessonStagesData';
 import { soundFX } from '../utils/audio';
 
-// 6 Lesson Stage Components (1: Learn, 2: Explore, 3: Predict, 4: Write & Run, 5: Debug, 6: Mastered)
+// 5 Lesson Stage Components (1: Learn, 2: Explore, 3: Predict, 4: Write & Run, 5: Mastered)
 import { Learn } from './Learn';
 import { Explore } from './Explore';
 import { Predict } from './Predict';
 import { WriteRun } from './WriteRun';
-import { Debug } from './Debug';
 import { Mastered } from './Mastered';
 
 interface FiveStageLessonRunnerProps {
@@ -18,8 +17,6 @@ interface FiveStageLessonRunnerProps {
   onExit: () => void;
   onCompleteLesson: (earnedXP: number) => void;
   onToggleTheme?: () => void;
-  tapToRevealEnabled?: boolean;
-  onToggleTapToReveal?: () => void;
 }
 
 const renderSnippetLine = (line: string, isDark: boolean) => {
@@ -118,8 +115,7 @@ const STAGE_TITLES: Record<number, string> = {
   2: 'Stage 2 - EXPLORE',
   3: 'Stage 3 - PREDICT',
   4: 'Stage 4 - WRITE & RUN',
-  5: 'Stage 5 - DEBUG',
-  6: 'Stage 6 - MASTERED',
+  5: 'Stage 5 - MASTERED',
 };
 
 export const FiveStageLessonRunner: React.FC<FiveStageLessonRunnerProps> = ({
@@ -138,14 +134,11 @@ export const FiveStageLessonRunner: React.FC<FiveStageLessonRunnerProps> = ({
   const [learnRevealStep, setLearnRevealStep] = useState<number>(0);
   const [exploreRevealStep, setExploreRevealStep] = useState<number>(0);
   const [predictRevealStep, setPredictRevealStep] = useState<number>(0);
-  const [writeRunRevealStep, setWriteRunRevealStep] = useState<number>(3);
+  const [writeRunRevealStep, setWriteRunRevealStep] = useState<number>(0);
 
   // Predict state: support all questions, no default selected answer
   const [predictAnswers, setPredictAnswers] = useState<Record<number, string>>({});
   const [activePredictCardIdx, setActivePredictCardIdx] = useState<number>(0);
-
-  // Temporary developer/tester tools
-  const [showSkipMenu, setShowSkipMenu] = useState<boolean>(false);
 
   // Write & Run state
   const lessonData: FiveStageLesson =
@@ -199,13 +192,81 @@ export const FiveStageLessonRunner: React.FC<FiveStageLessonRunnerProps> = ({
     };
   }, [onExit]);
 
-  // Note: Stage 2 (Explore) and Stage 3 (Predict) indicator highlighting and scroll sync
-  // are managed directly inside their respective components to avoid fluctuation during
-  // tap-to-continue programmatic scrolls and only sync when user manually scrolls.
+  // Sync scroll position with Step 2 (Explore) example chips
+  useEffect(() => {
+    if (currentStage !== 2) return;
+    let ticking = false;
+    const handleScroll = () => {
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          const cards = lessonData.explore.cards;
+          const rootEl = document.getElementById('root');
+          const currentScroll = rootEl && rootEl.scrollTop > 0 ? rootEl.scrollTop : (window.scrollY || document.documentElement.scrollTop || 0);
+          const scrollPos = currentScroll + 140;
+          for (let i = cards.length - 1; i >= 0; i--) {
+            const el = document.getElementById(`explore-card-${i}`);
+            if (el && el.offsetTop <= scrollPos) {
+              setExploreCardIndex((prev) => (prev !== i ? i : prev));
+              break;
+            }
+          }
+          ticking = false;
+        });
+        ticking = true;
+      }
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    const rootEl = document.getElementById('root');
+    if (rootEl) {
+      rootEl.addEventListener('scroll', handleScroll, { passive: true });
+    }
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      if (rootEl) {
+        rootEl.removeEventListener('scroll', handleScroll);
+      }
+    };
+  }, [currentStage, lessonData.explore.cards]);
+
+  // Sync scroll position with Step 3 (Predict) question chips
+  useEffect(() => {
+    if (currentStage !== 3) return;
+    let ticking = false;
+    const handleScroll = () => {
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          const questions = lessonData.predict.questions;
+          const rootEl = document.getElementById('root');
+          const currentScroll = rootEl && rootEl.scrollTop > 0 ? rootEl.scrollTop : (window.scrollY || document.documentElement.scrollTop || 0);
+          const scrollPos = currentScroll + 140;
+          for (let i = questions.length - 1; i >= 0; i--) {
+            const el = document.getElementById(`predict-q-${i}`);
+            if (el && el.offsetTop <= scrollPos) {
+              setActivePredictCardIdx((prev) => (prev !== i ? i : prev));
+              break;
+            }
+          }
+          ticking = false;
+        });
+        ticking = true;
+      }
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    const rootEl = document.getElementById('root');
+    if (rootEl) {
+      rootEl.addEventListener('scroll', handleScroll, { passive: true });
+    }
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      if (rootEl) {
+        rootEl.removeEventListener('scroll', handleScroll);
+      }
+    };
+  }, [currentStage, lessonData.predict.questions]);
 
   const handleNextStage = () => {
     soundFX.playClick();
-    if (currentStage < 6) {
+    if (currentStage < 5) {
       const nextStage = currentStage + 1;
       window.history.pushState({ codedoStage: nextStage }, '');
       setCurrentStage(nextStage);
@@ -233,7 +294,10 @@ export const FiveStageLessonRunner: React.FC<FiveStageLessonRunnerProps> = ({
   };
 
   const handleRunCode = () => {
+    soundFX.playClick();
     setHasRunCode(true);
+    setActualOutput(lessonData.writeRun.expectedOutput);
+    soundFX.playSuccess();
   };
 
   const handleSelectPredictOption = (qIdx: number, optId: string) => {
@@ -244,21 +308,6 @@ export const FiveStageLessonRunner: React.FC<FiveStageLessonRunnerProps> = ({
     if (opt?.isCorrect) {
       soundFX.playSuccess();
     }
-  };
-
-  // Temp auto fill correct answers for Predict stage
-  const handleAutoFillPredictAnswers = () => {
-    soundFX.playSuccess();
-    const correctMap: Record<number, string> = {};
-    lessonData.predict.questions.forEach((q, idx) => {
-      const correctOpt = q.options.find((opt) => opt.isCorrect);
-      if (correctOpt) {
-        correctMap[idx] = correctOpt.id;
-      }
-    });
-    setPredictAnswers(correctMap);
-    // Reveal all questions so user can inspect or advance immediately
-    setPredictRevealStep(lessonData.predict.questions.length);
   };
 
   const isDark = theme === 'dark';
@@ -303,92 +352,9 @@ export const FiveStageLessonRunner: React.FC<FiveStageLessonRunnerProps> = ({
             </h1>
           </div>
 
-          {/* Action / Tools Area in Toolbar */}
-          <div className="flex items-center gap-1.5">
-            {/* Temp: Skip Tap Flow Button on Step 1 */}
-            {currentStage === 1 && (
-              <div className="relative">
-                <button
-                  type="button"
-                  onClick={() => setShowSkipMenu((prev) => !prev)}
-                  className={`text-[11px] font-semibold font-mono px-2 py-1 rounded-lg border flex items-center gap-1 transition-all active:scale-95 cursor-pointer ${
-                    isDark
-                      ? 'bg-amber-500/10 border-amber-500/30 text-amber-300 hover:bg-amber-500/20'
-                      : 'bg-amber-50 border-amber-200 text-amber-800 hover:bg-amber-100'
-                  }`}
-                  title="Temporary Skip: Jump directly to any stage without tap-to-reveal"
-                >
-                  <span className="material-symbols-outlined text-[14px]">fast_forward</span>
-                  <span>Skip</span>
-                </button>
-
-                {/* Dropdown to jump directly to any desired stage */}
-                {showSkipMenu && (
-                  <div
-                    className={`absolute right-0 top-full mt-1.5 w-44 rounded-xl border p-1.5 shadow-xl z-50 transition-all ${
-                      isDark ? 'bg-[#151b28] border-white/10 text-slate-200' : 'bg-white border-slate-200 text-slate-800'
-                    }`}
-                  >
-                    <div className="px-2 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                      Jump to Screen:
-                    </div>
-                    {[
-                      { stage: 1, label: 'Stage 1: Learn (Full)' },
-                      { stage: 2, label: 'Stage 2: Explore' },
-                      { stage: 3, label: 'Stage 3: Predict' },
-                      { stage: 4, label: 'Stage 4: Write & Run' },
-                      { stage: 5, label: 'Stage 5: Debug' },
-                      { stage: 6, label: 'Stage 6: Mastered' },
-                    ].map((item) => (
-                      <button
-                        key={item.stage}
-                        type="button"
-                        onClick={() => {
-                          setShowSkipMenu(false);
-                          if (item.stage === 1) {
-                            // Max out reveal step so it's fully revealed
-                            setLearnRevealStep(10);
-                          }
-                          handleJumpToStage(item.stage);
-                        }}
-                        className={`w-full text-left px-2 py-1.5 rounded-lg text-xs font-medium flex items-center justify-between transition-colors cursor-pointer ${
-                          currentStage === item.stage
-                            ? 'bg-indigo-600 text-white'
-                            : isDark
-                            ? 'hover:bg-white/5 text-slate-300'
-                            : 'hover:bg-slate-100 text-slate-700'
-                        }`}
-                      >
-                        <span>{item.label}</span>
-                        {currentStage === item.stage && (
-                          <span className="material-symbols-outlined text-[14px]">check</span>
-                        )}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Temp: Auto Fill Answer Button on Predict Screen (Step 3) */}
-            {currentStage === 3 && (
-              <button
-                type="button"
-                onClick={handleAutoFillPredictAnswers}
-                className={`text-[11px] font-semibold font-mono px-2 py-1 rounded-lg border flex items-center gap-1 transition-all active:scale-95 cursor-pointer ${
-                  isDark
-                    ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300 hover:bg-emerald-500/20'
-                    : 'bg-emerald-50 border-emerald-200 text-emerald-800 hover:bg-emerald-100'
-                }`}
-                title="Temporary Tool: Auto fill correct answers for all predict questions"
-              >
-                <span className="material-symbols-outlined text-[14px]">auto_fix_high</span>
-                <span>Auto Fill</span>
-              </button>
-            )}
-
-            {/* Theme Toggle Button */}
-            {onToggleTheme && (
+          {/* Theme Toggle Button */}
+          <div className="flex items-center">
+            {onToggleTheme ? (
               <button
                 aria-label="Toggle theme"
                 type="button"
@@ -404,6 +370,8 @@ export const FiveStageLessonRunner: React.FC<FiveStageLessonRunnerProps> = ({
                   {isDark ? 'light_mode' : 'dark_mode'}
                 </span>
               </button>
+            ) : (
+              <div className="w-9" />
             )}
           </div>
         </div>
@@ -430,7 +398,7 @@ export const FiveStageLessonRunner: React.FC<FiveStageLessonRunnerProps> = ({
             </span>
           </div>
           <div className="flex items-center gap-1.5 shrink-0">
-            {[1, 2, 3, 4, 5, 6].map((step) => {
+            {[1, 2, 3, 4, 5].map((step) => {
               const isActive = step === currentStage;
               const isPassed = step < currentStage;
               return (
@@ -509,24 +477,13 @@ export const FiveStageLessonRunner: React.FC<FiveStageLessonRunnerProps> = ({
             hasRunCode={hasRunCode}
             setHasRunCode={setHasRunCode}
             actualOutput={actualOutput}
-            setActualOutput={setActualOutput}
             onRunCode={handleRunCode}
             onContinue={handleNextStage}
           />
         )}
 
-        {/* ================= STEP 5: DEBUG ================= */}
+        {/* ================= STEP 5: MASTERED ================= */}
         {currentStage === 5 && (
-          <Debug
-            data={lessonData.debug}
-            topicTitle={lessonData.topicTitle}
-            isDark={isDark}
-            onContinue={handleNextStage}
-          />
-        )}
-
-        {/* ================= STEP 6: MASTERED ================= */}
-        {currentStage === 6 && (
           <Mastered
             data={lessonData.mastered}
             stageName={lessonData.stageName}
