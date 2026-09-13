@@ -47,6 +47,8 @@ export interface LessonQuestion {
   isBoss?: boolean;
 }
 
+export type CurriculumLevel = 'beginner' | 'intermediate' | 'experienced';
+
 export interface LessonMeta {
   id: string;
   title: string;
@@ -66,6 +68,10 @@ export interface WorldMeta {
   badge: string;
   color: string;
   order: number;
+  level: CurriculumLevel;
+  levelTitle: string; // e.g. 'Beginner', 'Intermediate', 'Experienced'
+  bossTitle?: string;
+  bossDescription?: string;
   lessons: LessonMeta[];
 }
 

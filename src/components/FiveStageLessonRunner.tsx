@@ -3,11 +3,12 @@ import { AppTheme, UserStats } from '../types';
 import { FiveStageLesson, AVAILABLE_FIVE_STAGE_LESSONS } from '../data/lessonStagesData';
 import { soundFX } from '../utils/audio';
 
-// 5 Lesson Stage Components (1: Learn, 2: Explore, 3: Predict, 4: Write & Run, 5: Mastered)
+// 6 Lesson Stage Components (1: Learn, 2: Explore, 3: Predict, 4: Write & Run, 5: Debug, 6: Mastered)
 import { Learn } from './Learn';
 import { Explore } from './Explore';
 import { Predict } from './Predict';
 import { WriteRun } from './WriteRun';
+import { Debug } from './Debug';
 import { Mastered } from './Mastered';
 
 interface FiveStageLessonRunnerProps {
@@ -17,6 +18,8 @@ interface FiveStageLessonRunnerProps {
   onExit: () => void;
   onCompleteLesson: (earnedXP: number) => void;
   onToggleTheme?: () => void;
+  tapToRevealEnabled?: boolean;
+  onToggleTapToReveal?: () => void;
 }
 
 const renderSnippetLine = (line: string, isDark: boolean) => {
@@ -111,25 +114,13 @@ const renderSnippetLine = (line: string, isDark: boolean) => {
 };
 
 const STAGE_TITLES: Record<number, string> = {
-  1: '1. Learn',
-  2: '2. Explore',
-  3: '3. Predict',
-  4: '4. Write & Run',
-  5: '5. Mastered',
+  1: 'Stage 1 - LEARN',
+  2: 'Stage 2 - EXPLORE',
+  3: 'Stage 3 - PREDICT',
+  4: 'Stage 4 - WRITE & RUN',
+  5: 'Stage 5 - DEBUG',
+  6: 'Stage 6 - MASTERED',
 };
-
-/**
- * Tap-to-Reveal Configuration
- * -------------------------------------------------------------
- * DEFAULT_BYPASS_FIRST_THREE_SCREENS:
- * - When `true`: Screens 1-3 (Learn, Explore, Predict) are immediately open,
- *   so you can focus-test the screen-tap interaction on Screen 4 (Write & Run).
- * - When `false`: All screens (1 through 4) run their full progressive screen-tap reveal flow.
- *
- * To permanently revert for all screens in code, simply set this constant to `false`.
- * It can also be toggled anytime in the UI using the header badge!
- */
-export const DEFAULT_BYPASS_FIRST_THREE_SCREENS = true;
 
 export const FiveStageLessonRunner: React.FC<FiveStageLessonRunnerProps> = ({
   theme,
@@ -143,27 +134,18 @@ export const FiveStageLessonRunner: React.FC<FiveStageLessonRunnerProps> = ({
   const [currentStage, setCurrentStage] = useState<number>(1); // 1: Learn, 2: Explore, 3: Predict, 4: WriteRun, 5: Mastered
   const [exploreCardIndex, setExploreCardIndex] = useState<number>(0);
 
-  // Bypass toggle state: easily switched between testing Screen 4 vs all screens
-  const [bypassFirstThreeScreens, setBypassFirstThreeScreens] = useState<boolean>(
-    DEFAULT_BYPASS_FIRST_THREE_SCREENS
-  );
-
-  const tapConfig = {
-    learn: !bypassFirstThreeScreens,
-    explore: !bypassFirstThreeScreens,
-    predict: !bypassFirstThreeScreens,
-    writeRun: true,
-  };
-
   // Preserve reveal steps across stage navigation (when user clicks back/forward)
   const [learnRevealStep, setLearnRevealStep] = useState<number>(0);
   const [exploreRevealStep, setExploreRevealStep] = useState<number>(0);
   const [predictRevealStep, setPredictRevealStep] = useState<number>(0);
-  const [writeRunRevealStep, setWriteRunRevealStep] = useState<number>(0);
+  const [writeRunRevealStep, setWriteRunRevealStep] = useState<number>(3);
 
   // Predict state: support all questions, no default selected answer
   const [predictAnswers, setPredictAnswers] = useState<Record<number, string>>({});
   const [activePredictCardIdx, setActivePredictCardIdx] = useState<number>(0);
+
+  // Temporary developer/tester tools
+  const [showSkipMenu, setShowSkipMenu] = useState<boolean>(false);
 
   // Write & Run state
   const lessonData: FiveStageLesson =
@@ -173,15 +155,6 @@ export const FiveStageLessonRunner: React.FC<FiveStageLessonRunnerProps> = ({
   const [userCode, setUserCode] = useState<string>(lessonData.writeRun.initialCode);
   const [hasRunCode, setHasRunCode] = useState<boolean>(false);
   const [actualOutput, setActualOutput] = useState<string>(lessonData.writeRun.expectedOutput);
-  const [isWriteRunPassed, setIsWriteRunPassed] = useState<boolean>(false);
-
-  // Sync state when lesson changes
-  useEffect(() => {
-    setUserCode(lessonData.writeRun.initialCode);
-    setHasRunCode(false);
-    setActualOutput(lessonData.writeRun.expectedOutput);
-    setIsWriteRunPassed(false);
-  }, [currentLessonKey, lessonData.writeRun.initialCode, lessonData.writeRun.expectedOutput]);
 
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -232,7 +205,7 @@ export const FiveStageLessonRunner: React.FC<FiveStageLessonRunnerProps> = ({
 
   const handleNextStage = () => {
     soundFX.playClick();
-    if (currentStage < 5) {
+    if (currentStage < 6) {
       const nextStage = currentStage + 1;
       window.history.pushState({ codedoStage: nextStage }, '');
       setCurrentStage(nextStage);
@@ -253,10 +226,6 @@ export const FiveStageLessonRunner: React.FC<FiveStageLessonRunnerProps> = ({
   };
 
   const handleJumpToStage = (step: number) => {
-    if (step === 5 && !isWriteRunPassed) {
-      soundFX.playError();
-      return;
-    }
     soundFX.playClick();
     window.history.pushState({ codedoStage: step }, '');
     setCurrentStage(step);
@@ -277,6 +246,21 @@ export const FiveStageLessonRunner: React.FC<FiveStageLessonRunnerProps> = ({
     }
   };
 
+  // Temp auto fill correct answers for Predict stage
+  const handleAutoFillPredictAnswers = () => {
+    soundFX.playSuccess();
+    const correctMap: Record<number, string> = {};
+    lessonData.predict.questions.forEach((q, idx) => {
+      const correctOpt = q.options.find((opt) => opt.isCorrect);
+      if (correctOpt) {
+        correctMap[idx] = correctOpt.id;
+      }
+    });
+    setPredictAnswers(correctMap);
+    // Reveal all questions so user can inspect or advance immediately
+    setPredictRevealStep(lessonData.predict.questions.length);
+  };
+
   const isDark = theme === 'dark';
 
   return (
@@ -293,13 +277,13 @@ export const FiveStageLessonRunner: React.FC<FiveStageLessonRunnerProps> = ({
             : 'bg-white/95 backdrop-blur-md border-slate-200/90 shadow-[0_2px_8px_rgba(0,0,0,0.06),0_1px_3px_rgba(0,0,0,0.04)]'
         }`}
       >
-        <div className="w-full max-w-md mx-auto px-4 h-14 flex items-center justify-between relative">
+        <div className="w-full max-w-md mx-auto px-4 h-14 flex items-center justify-between">
           {/* Back button */}
           <button
             aria-label="Go back"
             type="button"
             onClick={handlePreviousStage}
-            className={`w-10 h-10 rounded-full flex items-center justify-center transition-all active:scale-95 cursor-pointer z-10 ${
+            className={`w-10 h-10 rounded-full flex items-center justify-center transition-all active:scale-95 cursor-pointer ${
               isDark
                 ? 'text-slate-200 hover:text-white hover:bg-white/10'
                 : 'text-slate-700 hover:text-slate-900 hover:bg-slate-100'
@@ -308,50 +292,103 @@ export const FiveStageLessonRunner: React.FC<FiveStageLessonRunnerProps> = ({
             <span className="material-symbols-outlined text-[22px]">arrow_back</span>
           </button>
 
-          {/* Current Step Name in Toolbar (Number and Stage name: e.g. 1. Learn, 2. Explore, 3. Predict, 4. Write & Run, 5. Mastered) */}
-          <div className="absolute left-1/2 -translate-x-1/2 flex items-center justify-center pointer-events-none">
+          {/* Current Step Name in Toolbar (Learn, Explore, Predict, Write & Run, Mastered) */}
+          <div className="flex flex-col items-center justify-center">
             <h1
               className={`font-['Outfit'] font-bold text-base tracking-tight ${
                 isDark ? 'text-white' : 'text-slate-900'
               }`}
             >
-              {STAGE_TITLES[currentStage] || '1. Learn'}
+              {STAGE_TITLES[currentStage] || 'Learn'}
             </h1>
           </div>
 
-          {/* Tap Reveal Mode Switcher (ONLY on Learn screen) & Theme Toggle */}
-          <div className="flex items-center gap-2 z-10">
+          {/* Action / Tools Area in Toolbar */}
+          <div className="flex items-center gap-1.5">
+            {/* Temp: Skip Tap Flow Button on Step 1 */}
             {currentStage === 1 && (
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setShowSkipMenu((prev) => !prev)}
+                  className={`text-[11px] font-semibold font-mono px-2 py-1 rounded-lg border flex items-center gap-1 transition-all active:scale-95 cursor-pointer ${
+                    isDark
+                      ? 'bg-amber-500/10 border-amber-500/30 text-amber-300 hover:bg-amber-500/20'
+                      : 'bg-amber-50 border-amber-200 text-amber-800 hover:bg-amber-100'
+                  }`}
+                  title="Temporary Skip: Jump directly to any stage without tap-to-reveal"
+                >
+                  <span className="material-symbols-outlined text-[14px]">fast_forward</span>
+                  <span>Skip</span>
+                </button>
+
+                {/* Dropdown to jump directly to any desired stage */}
+                {showSkipMenu && (
+                  <div
+                    className={`absolute right-0 top-full mt-1.5 w-44 rounded-xl border p-1.5 shadow-xl z-50 transition-all ${
+                      isDark ? 'bg-[#151b28] border-white/10 text-slate-200' : 'bg-white border-slate-200 text-slate-800'
+                    }`}
+                  >
+                    <div className="px-2 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                      Jump to Screen:
+                    </div>
+                    {[
+                      { stage: 1, label: 'Stage 1: Learn (Full)' },
+                      { stage: 2, label: 'Stage 2: Explore' },
+                      { stage: 3, label: 'Stage 3: Predict' },
+                      { stage: 4, label: 'Stage 4: Write & Run' },
+                      { stage: 5, label: 'Stage 5: Debug' },
+                      { stage: 6, label: 'Stage 6: Mastered' },
+                    ].map((item) => (
+                      <button
+                        key={item.stage}
+                        type="button"
+                        onClick={() => {
+                          setShowSkipMenu(false);
+                          if (item.stage === 1) {
+                            // Max out reveal step so it's fully revealed
+                            setLearnRevealStep(10);
+                          }
+                          handleJumpToStage(item.stage);
+                        }}
+                        className={`w-full text-left px-2 py-1.5 rounded-lg text-xs font-medium flex items-center justify-between transition-colors cursor-pointer ${
+                          currentStage === item.stage
+                            ? 'bg-indigo-600 text-white'
+                            : isDark
+                            ? 'hover:bg-white/5 text-slate-300'
+                            : 'hover:bg-slate-100 text-slate-700'
+                        }`}
+                      >
+                        <span>{item.label}</span>
+                        {currentStage === item.stage && (
+                          <span className="material-symbols-outlined text-[14px]">check</span>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Temp: Auto Fill Answer Button on Predict Screen (Step 3) */}
+            {currentStage === 3 && (
               <button
-                aria-label="Toggle tap to reveal mode"
                 type="button"
-                onClick={() => {
-                  soundFX.playClick();
-                  setBypassFirstThreeScreens((prev) => !prev);
-                }}
-                className={`text-[11px] font-['Outfit'] font-semibold px-2.5 py-1 rounded-full border flex items-center gap-1 transition-all cursor-pointer select-none active:scale-95 ${
-                  bypassFirstThreeScreens
-                    ? isDark
-                      ? 'bg-indigo-950/40 text-indigo-300 border-indigo-500/30 hover:border-indigo-400'
-                      : 'bg-indigo-50 text-indigo-700 border-indigo-200 hover:border-indigo-300'
-                    : isDark
-                    ? 'bg-emerald-950/40 text-emerald-300 border-emerald-500/30 hover:border-emerald-400'
-                    : 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:border-emerald-300'
+                onClick={handleAutoFillPredictAnswers}
+                className={`text-[11px] font-semibold font-mono px-2 py-1 rounded-lg border flex items-center gap-1 transition-all active:scale-95 cursor-pointer ${
+                  isDark
+                    ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300 hover:bg-emerald-500/20'
+                    : 'bg-emerald-50 border-emerald-200 text-emerald-800 hover:bg-emerald-100'
                 }`}
-                title={
-                  bypassFirstThreeScreens
-                    ? 'Bypassing screens 1-3. Click to restore tap-to-reveal on ALL screens.'
-                    : 'Tap-to-reveal active on ALL screens. Click to bypass screens 1-3.'
-                }
+                title="Temporary Tool: Auto fill correct answers for all predict questions"
               >
-                <span className="material-symbols-outlined text-[14px]">
-                  {bypassFirstThreeScreens ? 'touch_app' : 'checklist'}
-                </span>
-                <span>{bypassFirstThreeScreens ? 'Screen 4 Tap' : 'All Screens Tap'}</span>
+                <span className="material-symbols-outlined text-[14px]">auto_fix_high</span>
+                <span>Auto Fill</span>
               </button>
             )}
 
-            {onToggleTheme ? (
+            {/* Theme Toggle Button */}
+            {onToggleTheme && (
               <button
                 aria-label="Toggle theme"
                 type="button"
@@ -367,8 +404,6 @@ export const FiveStageLessonRunner: React.FC<FiveStageLessonRunnerProps> = ({
                   {isDark ? 'light_mode' : 'dark_mode'}
                 </span>
               </button>
-            ) : (
-              <div className="w-9" />
             )}
           </div>
         </div>
@@ -377,49 +412,47 @@ export const FiveStageLessonRunner: React.FC<FiveStageLessonRunnerProps> = ({
       {/* Main Content Area */}
       <div className="w-full max-w-md px-4 pt-3 flex flex-col">
         {/* ================= PROGRESS STRIP (SHOWS LESSON NAME + STEP PROGRESS) ================= */}
-        {currentStage < 5 && (
-          <section
-            className={`mb-4 flex items-center justify-between px-4 py-2.5 rounded-2xl border transition-all ${
-              isDark
-                ? 'bg-[#171b26] border-[#262c3d] shadow-sm'
-                : 'bg-white/90 backdrop-blur-sm border-slate-200/80 shadow-sm'
-            }`}
-          >
-            <div className="flex items-center gap-2 min-w-0 pr-2">
-              <span className="w-2 h-2 rounded-full bg-indigo-600 shrink-0"></span>
-              <span
-                className={`font-['Outfit'] font-semibold text-xs tracking-wide truncate ${
-                  isDark ? 'text-indigo-300' : 'text-indigo-900'
-                }`}
-              >
-                {lessonData.topicTitle}
-              </span>
-            </div>
-            <div className="flex items-center gap-1.5 shrink-0">
-              {[1, 2, 3, 4].map((step) => {
-                const isActive = step === currentStage;
-                const isPassed = step < currentStage;
-                return (
-                  <button
-                    key={step}
-                    type="button"
-                    onClick={() => handleJumpToStage(step)}
-                    className={`rounded-full transition-all cursor-pointer ${
-                      isActive
-                        ? 'w-2.5 h-2.5 bg-indigo-600 ring-2 ring-indigo-300 dark:ring-indigo-500/40'
-                        : isPassed
-                        ? 'w-2 h-2 bg-indigo-600'
-                        : isDark
-                        ? 'w-1.5 h-1.5 bg-slate-700'
-                        : 'w-1.5 h-1.5 bg-slate-300'
-                    }`}
-                    title={STAGE_TITLES[step]}
-                  />
-                );
-              })}
-            </div>
-          </section>
-        )}
+        <section
+          className={`mb-4 flex items-center justify-between px-4 py-2.5 rounded-2xl border transition-all ${
+            isDark
+              ? 'bg-[#171b26] border-[#262c3d] shadow-sm'
+              : 'bg-white/90 backdrop-blur-sm border-slate-200/80 shadow-sm'
+          }`}
+        >
+          <div className="flex items-center gap-2 min-w-0 pr-2">
+            <span className="w-2 h-2 rounded-full bg-indigo-600 shrink-0"></span>
+            <span
+              className={`font-['Outfit'] font-semibold text-xs tracking-wide truncate ${
+                isDark ? 'text-indigo-300' : 'text-indigo-900'
+              }`}
+            >
+              {lessonData.topicTitle}
+            </span>
+          </div>
+          <div className="flex items-center gap-1.5 shrink-0">
+            {[1, 2, 3, 4, 5, 6].map((step) => {
+              const isActive = step === currentStage;
+              const isPassed = step < currentStage;
+              return (
+                <button
+                  key={step}
+                  type="button"
+                  onClick={() => handleJumpToStage(step)}
+                  className={`rounded-full transition-all cursor-pointer ${
+                    isActive
+                      ? 'w-2.5 h-2.5 bg-indigo-600 ring-2 ring-indigo-300 dark:ring-indigo-500/40'
+                      : isPassed
+                      ? 'w-2 h-2 bg-indigo-600'
+                      : isDark
+                      ? 'w-1.5 h-1.5 bg-slate-700'
+                      : 'w-1.5 h-1.5 bg-slate-300'
+                  }`}
+                  title={STAGE_TITLES[step]}
+                />
+              );
+            })}
+          </div>
+        </section>
 
         {/* ================= STEP 1: LEARN ================= */}
         {currentStage === 1 && (
@@ -430,7 +463,6 @@ export const FiveStageLessonRunner: React.FC<FiveStageLessonRunnerProps> = ({
             setRevealStep={setLearnRevealStep}
             onContinue={handleNextStage}
             renderSnippetLine={renderSnippetLine}
-            tapToRevealEnabled={tapConfig.learn}
           />
         )}
 
@@ -445,7 +477,6 @@ export const FiveStageLessonRunner: React.FC<FiveStageLessonRunnerProps> = ({
             setExploreCardIndex={setExploreCardIndex}
             scrollToElement={scrollToElement}
             onContinue={handleNextStage}
-            tapToRevealEnabled={tapConfig.explore}
           />
         )}
 
@@ -462,7 +493,6 @@ export const FiveStageLessonRunner: React.FC<FiveStageLessonRunnerProps> = ({
             onSelectOption={handleSelectPredictOption}
             scrollToElement={scrollToElement}
             onContinue={handleNextStage}
-            tapToRevealEnabled={tapConfig.predict}
           />
         )}
 
@@ -482,13 +512,21 @@ export const FiveStageLessonRunner: React.FC<FiveStageLessonRunnerProps> = ({
             setActualOutput={setActualOutput}
             onRunCode={handleRunCode}
             onContinue={handleNextStage}
-            tapToRevealEnabled={tapConfig.writeRun}
-            onOutputMatch={setIsWriteRunPassed}
           />
         )}
 
-        {/* ================= STEP 5: MASTERED ================= */}
+        {/* ================= STEP 5: DEBUG ================= */}
         {currentStage === 5 && (
+          <Debug
+            data={lessonData.debug}
+            topicTitle={lessonData.topicTitle}
+            isDark={isDark}
+            onContinue={handleNextStage}
+          />
+        )}
+
+        {/* ================= STEP 6: MASTERED ================= */}
+        {currentStage === 6 && (
           <Mastered
             data={lessonData.mastered}
             stageName={lessonData.stageName}

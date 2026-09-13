@@ -84,7 +84,24 @@ export interface Stage4WriteRunData {
   };
 }
 
-export interface Stage5MasteredData {
+export type DebugBugType = 'syntax' | 'logic' | 'runtime' | 'null-safety' | 'type' | 'collection';
+
+export interface Stage5DebugData {
+  title: string;
+  subtitle: string;
+  challengeNumber: number;
+  totalChallenges: number;
+  difficulty: 'easy' | 'medium' | 'hard';
+  bugType: DebugBugType;
+  bugLabel: string;
+  brokenCode: string;
+  fixedCode: string;
+  expectedOutput: string;
+  hints: [string, string, string]; // Hint 1: Conceptual clue, Hint 2: Narrow reasoning, Hint 3: Pinpointed direction
+  explanation: string;
+}
+
+export interface Stage6MasteredData {
   topicTitle: string;
   summary: string;
   passedCount: string;
@@ -97,6 +114,9 @@ export interface Stage5MasteredData {
   accuracy: string;
 }
 
+// Backward compatibility alias for Stage5MasteredData
+export type Stage5MasteredData = Stage6MasteredData;
+
 export interface FiveStageLesson {
   id: string;
   worldId: string;
@@ -107,7 +127,8 @@ export interface FiveStageLesson {
   explore: Stage2ExploreData;
   predict: Stage3PredictData;
   writeRun: Stage4WriteRunData;
-  mastered: Stage5MasteredData;
+  debug: Stage5DebugData;
+  mastered: Stage6MasteredData;
 }
 
 export const FUNCTIONS_LESSON: FiveStageLesson = {
@@ -422,10 +443,43 @@ fun multiply(a: Int, b: Int): Int {
       expected: '20'
     }
   },
+  debug: {
+    title: 'Diagnose the Function Defect',
+    subtitle: 'Inspect the broken function, find why the return value fails the requirements, and fix it.',
+    challengeNumber: 1,
+    totalChallenges: 1,
+    difficulty: 'easy',
+    bugType: 'logic',
+    bugLabel: 'Logic Flaw: Incorrect Operator in Return',
+    brokenCode: `fun multiply(a: Int, b: Int): Int {
+    // BUG: Returning sum instead of product!
+    return a + b
+}
+
+fun main() {
+    val result = multiply(4, 5)
+    println("Result: $result")
+}`,
+    fixedCode: `fun multiply(a: Int, b: Int): Int {
+    return a * b
+}
+
+fun main() {
+    val result = multiply(4, 5)
+    println("Result: $result")
+}`,
+    expectedOutput: 'Result: 20',
+    hints: [
+      'Look closely at the arithmetic operation performed in the return statement.',
+      'The function says "multiply", but the arithmetic operator inside is adding the two parameters.',
+      'Replace the addition operator (+) with the multiplication operator (*) in "return a * b".'
+    ],
+    explanation: 'The function originally used the addition operator (+) instead of multiplication (*), causing multiply(4, 5) to return 9 instead of 20. Replacing it with `return a * b` resolves the logic defect.'
+  },
   mastered: {
     topicTitle: 'Kotlin Functions',
-    summary: 'You have successfully mastered function syntax, parameters, return values, and invoked structured code flow.',
-    passedCount: '4 / 4 PASSED',
+    summary: 'You have successfully mastered function syntax, parameters, return values, and diagnosed real-world code defects.',
+    passedCount: '5 / 5 PASSED',
     verificationItems: [
       {
         title: 'Concept understood',
@@ -442,9 +496,13 @@ fun multiply(a: Int, b: Int): Int {
       {
         title: 'Code written & executed',
         subtitle: '5 practical runtime tests passed'
+      },
+      {
+        title: 'Bugs diagnosed & repaired',
+        subtitle: 'Resolved arithmetic logic flaw & verified execution'
       }
     ],
-    xpEarned: 50,
+    xpEarned: 60,
     streakDays: 5,
     accuracy: '100%'
   }
@@ -651,10 +709,51 @@ export const LOOPS_LESSON: FiveStageLesson = {
       expected: '10'
     }
   },
+  debug: {
+    title: 'Diagnose the Loop Boundary Bug',
+    subtitle: 'Identify why the accumulator sum misses the final number, and fix the loop range expression.',
+    challengeNumber: 1,
+    totalChallenges: 1,
+    difficulty: 'easy',
+    bugType: 'logic',
+    bugLabel: 'Off-by-One Range Boundary Bug',
+    brokenCode: `fun sumRange(max: Int): Int {
+    var sum = 0
+    // BUG: using 'until' excludes the max boundary number!
+    for (i in 1 until max) {
+        sum += i
+    }
+    return sum
+}
+
+fun main() {
+    val total = sumRange(4)
+    println("Total: $total")
+}`,
+    fixedCode: `fun sumRange(max: Int): Int {
+    var sum = 0
+    for (i in 1..max) {
+        sum += i
+    }
+    return sum
+}
+
+fun main() {
+    val total = sumRange(4)
+    println("Total: $total")
+}`,
+    expectedOutput: 'Total: 10',
+    hints: [
+      'Check the range operator inside the for-loop header.',
+      'Notice that `until` creates an open-ended range that stops before `max` (1 until 4 only iterates 1, 2, 3 = 6).',
+      'Replace `1 until max` with the closed range operator `1..max` so 4 is included.'
+    ],
+    explanation: 'Using `1 until max` excluded the endpoint `4`, yielding 6 instead of 10. Replacing it with `1..max` includes all integers from 1 up to 4, producing the correct total of 10.'
+  },
   mastered: {
     topicTitle: 'Kotlin Loops',
-    summary: 'You have mastered iteration mechanics, range bounds, step modifiers, and break controls.',
-    passedCount: '4 / 4 PASSED',
+    summary: 'You have mastered iteration mechanics, range bounds, step modifiers, and diagnosed off-by-one loop defects.',
+    passedCount: '5 / 5 PASSED',
     verificationItems: [
       {
         title: 'Concept understood',
@@ -671,9 +770,13 @@ export const LOOPS_LESSON: FiveStageLesson = {
       {
         title: 'Code written & executed',
         subtitle: 'Loop algorithm executed flawlessly'
+      },
+      {
+        title: 'Bugs diagnosed & repaired',
+        subtitle: 'Corrected boundary range condition in loop'
       }
     ],
-    xpEarned: 50,
+    xpEarned: 60,
     streakDays: 5,
     accuracy: '100%'
   }
@@ -990,11 +1093,38 @@ export const VARIABLES_LESSON: FiveStageLesson = {
       expected: 'Player Alex holds 40 coins'
     }
   },
+  debug: {
+    title: 'Diagnose the Mutation Violation',
+    subtitle: 'Identify why the program fails with a compile error when trying to reassign score, and fix it.',
+    challengeNumber: 1,
+    totalChallenges: 1,
+    difficulty: 'easy',
+    bugType: 'syntax',
+    bugLabel: 'Syntax / Mutability Bug: Val Reassignment',
+    brokenCode: `fun main() {
+    // BUG: score is declared with val, but modified below!
+    val score = 50
+    score = score + 25
+    println("Final Score: $score")
+}`,
+    fixedCode: `fun main() {
+    var score = 50
+    score = score + 25
+    println("Final Score: $score")
+}`,
+    expectedOutput: 'Final Score: 75',
+    hints: [
+      'In Kotlin, what is the key difference between `val` and `var`?',
+      '`val` creates a read-only immutable reference that cannot be reassigned after declaration.',
+      'Change `val score = 50` to `var score = 50` so `score` can be updated with `score + 25`.'
+    ],
+    explanation: 'In Kotlin, `val` represents an immutable reference. Reassigning `score = score + 25` generates a compilation error: "Val cannot be reassigned". Changing `val` to `var` allows mutable state updates.'
+  },
   mastered: {
     topicTitle: 'Variables & Immutability',
     summary:
-      'You have mastered Kotlin variable declarations, the core distinction between val and var, type inference, and string template interpolation.',
-    passedCount: '4/4',
+      'You have mastered Kotlin variable declarations, the core distinction between val and var, type inference, and diagnosed mutability compile bugs.',
+    passedCount: '5/5',
     verificationItems: [
       {
         title: 'val vs var Distinction',
@@ -1011,9 +1141,13 @@ export const VARIABLES_LESSON: FiveStageLesson = {
       {
         title: 'Static Type Safety',
         subtitle: 'Prevented invalid type reassignment at compile time'
+      },
+      {
+        title: 'Bugs diagnosed & repaired',
+        subtitle: 'Fixed val reassignment compile violation'
       }
     ],
-    xpEarned: 50,
+    xpEarned: 60,
     streakDays: 12,
     accuracy: '100%'
   }

@@ -220,7 +220,7 @@ export default function App() {
         {/* Screen Switcher */}
         <main className="flex-1 w-full flex flex-col">
           {fiveStageLessonKey ? (
-            /* 5-Stage Interactive Lesson Flow (Learn -> Explore -> Predict -> Write & Run -> Mastered) */
+            /* 6-Stage Interactive Lesson Flow (Learn -> Explore -> Predict -> Write & Run -> Debug -> Mastered) */
             <FiveStageLessonRunner
               theme={theme}
               initialLessonKey={fiveStageLessonKey}
